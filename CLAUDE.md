@@ -98,7 +98,7 @@ Six pillar-keyed subfolders. Slot → subfolder mapping:
 | SAT · Social Proof | Events / Group Photos |
 | SUN · Leader Voice | Leader Voice |
 
-> Note: subfolder names above are the working assumption. Verify against the actual Drive structure and update `templates.json` (Step 4) if any name differs. Mixed media (images + videos) live in each pillar folder; per-slot format preference is set in `templates.json`.
+> Subfolder names confirmed against Drive (May 2026). Mixed media (images + videos) live in each pillar folder; per-slot format preference is set in `templates.json`.
 
 Sharing must be **"Anyone with the link → Viewer"** so Canva can fetch assets via URL.
 

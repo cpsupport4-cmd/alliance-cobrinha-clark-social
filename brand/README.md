@@ -29,7 +29,7 @@ Parent folder: <https://drive.google.com/drive/folders/1wCB3ZwUhdMGCXUQvC48bUsp6
 | Events / Group Photos | SAT · Social Proof |
 | Leader Voice | SUN · Leader Voice |
 
-> If the actual Drive subfolder names differ from this list, update `templates.json` (Step 4) — don't rename the Drive.
+> Subfolder names confirmed against the live Drive (May 2026).
 
 ---
 
