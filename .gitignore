@@ -1,0 +1,30 @@
+# Raw media — lives in Drive, not git
+content/**/raw/*
+!content/**/raw/.gitkeep
+
+# Canva exports — ephemeral
+content/**/exports/
+content/**/*.mp4
+content/**/*.mov
+content/**/*.heic
+content/**/*.HEIC
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor junk
+.vscode/
+.idea/
+*.swp
+*~
+
+# Claude Code local state
+.claude/local/
+.claude/cache/
+
+# Secrets (just in case)
+.env
+.env.local
+*.key
