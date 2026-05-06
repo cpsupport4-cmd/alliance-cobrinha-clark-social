@@ -1,0 +1,133 @@
+{
+  "$comment": "Slot config for Alliance Cobrinha Clark social automation. Read by produce-post and daily-check skills. Update theme_signature after Vinz settles on a layout from real drafts (LA pattern).",
+
+  "operating_mode": "fresh-generate",
+  "operating_mode_notes": "Every weekly run calls Canva generate-design from scratch with the brand kit + the slot's generation_prompt. No registered master templates. Tradeoff: layout varies week-to-week. Once a slot's layout is locked, switch its mode to 'registered-master' and add design_id.",
+
+  "canva": {
+    "brand_kit_url": "https://canva.link/9dcx2ovypw69gig",
+    "brand_kit_id_resolved": null,
+    "destination_folder_name": "Alliance Cobrinha Clark",
+    "destination_folder_id_resolved": null,
+    "$comment": "First produce-post run should resolve and cache the brand kit ID + destination folder ID, then patch this file."
+  },
+
+  "drive": {
+    "parent_folder_url": "https://drive.google.com/drive/folders/1wCB3ZwUhdMGCXUQvC48bUsp6aWcjL5_L",
+    "parent_folder_id": "1wCB3ZwUhdMGCXUQvC48bUsp6aWcjL5_L",
+    "subfolders": {
+      "community": "Community",
+      "member_spotlights": "Member Spotlights",
+      "coach_student": "Coach-Student",
+      "kids_family": "Kids & Family",
+      "events_groups": "Events / Group Photos",
+      "leader_voice": "Leader Voice"
+    },
+    "$comment": "Skills should match Drive folders by exact name (case + punctuation). If a search returns nothing, surface the missing folder name to the user, don't guess."
+  },
+
+  "theme_signature": {
+    "$status": "unobserved",
+    "$comment": "Filled in after the first real draft is generated. Per LA pattern, the brand kit's actual aesthetic only becomes clear once we see what generate-design produces. Update this with: dominant background, decorative motifs, headline treatment, photo placement, typography hierarchy.",
+    "background": null,
+    "decorative_motifs": null,
+    "headline_treatment": null,
+    "photo_placement": null,
+    "typography_hierarchy": null,
+    "reference_design_id": null
+  },
+
+  "slots": [
+    {
+      "id": "01-mon-set-the-tone",
+      "day": "MON",
+      "name": "Set the Tone",
+      "pillar": "community_daily",
+      "drive_subfolder": "Community",
+      "prefers": "either",
+      "format": "instagram_post_4_5",
+      "dimensions": "1080x1350",
+      "drop_time_pht": "19:00",
+      "goal": "Consistency + presence — start the week strong",
+      "generation_prompt": "Instagram post, 1080x1350 (4:5 portrait). Brand kit auto-applies. Composition: warm community-first jiu-jitsu academy in Clark, Pampanga. Place hero photo prominently — students arriving for class, coach greeting, mat being prepared, anything that says 'we're here.' Headline area for short text like 'MONDAY. THE MAT IS OPEN.' or 'ANOTHER WEEK. SAME TEAM.' Small bottom-right caption: '@alliancecobrinhaclark'. Keep it understated — Monday is about presence, not hype. No sales language. Tone: settled, welcoming, real."
+    },
+    {
+      "id": "02-tue-member-story",
+      "day": "TUE",
+      "name": "Member Story",
+      "pillar": "member_spotlight",
+      "drive_subfolder": "Member Spotlights",
+      "prefers": "either",
+      "format": "instagram_post_4_5",
+      "dimensions": "1080x1350",
+      "drop_time_pht": "19:00",
+      "goal": "Relatability → conversion. Converts better than ads.",
+      "generation_prompt": "Instagram post, 1080x1350 (4:5 portrait). Brand kit auto-applies. Layout: portrait or candid shot of the featured student takes the visual focus. Quote-card treatment for the member's words — large pull quote in serif, short attribution line below. Examples of pull-quote text: 'Started with zero experience. Still here three months later.' or 'I came for fitness. I stayed for the people.' Small bottom-right caption: '@alliancecobrinhaclark'. Tone: honest, first-person if possible, no marketing polish. Real over produced."
+    },
+    {
+      "id": "03-wed-value-trust",
+      "day": "WED",
+      "name": "Value / Trust",
+      "pillar": "value_trust",
+      "drive_subfolder": "Coach-Student",
+      "prefers": "video",
+      "format": "instagram_reel_9_16",
+      "dimensions": "1080x1920",
+      "drop_time_pht": "19:00",
+      "goal": "Authority without intimidation. Educational, calm, accessible.",
+      "generation_prompt": "Instagram reel cover, 1080x1920 (9:16 vertical). Brand kit auto-applies. Video plays SILENT with text overlay only — no voice over allowed. Hero footage: coach demonstrating a fundamental, or coach correcting a student mid-technique. Text overlay (large, top-third): a single educational hook like 'WHY FUNDAMENTALS MATTER' or 'WHAT BEGINNERS SHOULD EXPECT.' Subhead in body text underneath the hook explains in 5–8 words. Bottom: '@alliancecobrinhaclark'. Tone: calm authority, no jargon walls, no hard sell."
+    },
+    {
+      "id": "04-thu-kids-family",
+      "day": "THU",
+      "name": "Kids / Family",
+      "pillar": "kids_family",
+      "drive_subfolder": "Kids & Family",
+      "prefers": "image",
+      "format": "instagram_post_4_5",
+      "dimensions": "1080x1350",
+      "drop_time_pht": "19:00",
+      "goal": "Parent conversion (CRITICAL). 50% of roster is kids 6–12; their parents are watching from the sideline.",
+      "generation_prompt": "Instagram post, 1080x1350 (4:5 portrait). Brand kit auto-applies. CRITICAL slot: the reader is a parent. Hero photo: kids in class, focused, smiling, engaged — NOT mid-throw, NOT sparring intense. Show what a parent wants to see — confidence, listening, a safe room. Headline area: short parent-facing text like 'CONFIDENCE. LISTENING. A SAFE PLACE TO LEARN.' or 'WHAT 45 MINUTES ON THE MAT BUILDS.' Small bottom-right caption: '@alliancecobrinhaclark'. Tone: reassuring, lead with what kids gain, never sound like adult class recruiting."
+    },
+    {
+      "id": "05-fri-community",
+      "day": "FRI",
+      "name": "Community",
+      "pillar": "community_daily",
+      "drive_subfolder": "Community",
+      "prefers": "image",
+      "format": "instagram_post_4_5",
+      "dimensions": "1080x1350",
+      "drop_time_pht": "19:00",
+      "goal": "Belonging. End-of-week vibe, looser than Monday.",
+      "generation_prompt": "Instagram post, 1080x1350 (4:5 portrait). Brand kit auto-applies. Hero photo: post-class moments — students laughing, group standing around the mat, water bottles and gis, the unposed warmth between training. NOT action shots, NOT technique. Headline area: short warm copy like 'WE TRAIN HARD. WE ENJOY THE PROCESS.' or 'THE WORK BETWEEN THE HIGHLIGHTS.' Small bottom-right caption: '@alliancecobrinhaclark'. Tone: settled, warm, end-of-week."
+    },
+    {
+      "id": "06-sat-social-proof",
+      "day": "SAT",
+      "name": "Social Proof",
+      "pillar": "social_proof",
+      "drive_subfolder": "Events / Group Photos",
+      "prefers": "image",
+      "format": "instagram_post_4_5",
+      "dimensions": "1080x1350",
+      "drop_time_pht": "19:00",
+      "goal": "FOMO. Show the room is full. Quietly confident.",
+      "generation_prompt": "Instagram post, 1080x1350 (4:5 portrait). Brand kit auto-applies. Hero photo: full-room shot — group photo after class, packed open mat, big team lineup. The image must communicate scale (lots of people, full mat). Headline area: short copy like 'WEEKEND TRAINING WITH THE TEAM.' or 'BUILT TOGETHER.' or '42 OF US. AND COUNTING.' Small bottom-right caption: '@alliancecobrinhaclark'. Tone: quietly confident — let the image do the talking. NEVER 'limited slots' or 'don't miss out.'"
+    },
+    {
+      "id": "07-sun-leader-voice",
+      "day": "SUN",
+      "name": "Leader Voice",
+      "pillar": "leader_voice",
+      "drive_subfolder": "Leader Voice",
+      "prefers": "video",
+      "format": "instagram_reel_9_16",
+      "dimensions": "1080x1920",
+      "drop_time_pht": "19:00",
+      "goal": "Trust + leadership. Close the week with intention.",
+      "generation_prompt": "Instagram reel cover, 1080x1920 (9:16 vertical). Brand kit auto-applies. SILENT video with text overlay only — no voice over. Hero footage: 15–30 second clip of the academy at training, professor walking the mat, or a wide shot of the room mid-class. Text overlay (large, top-third): a leadership-voice hook like 'WHAT WE'RE BUILDING.' or 'BUILT TOGETHER — ONE MAT, ONE TEAM.' Subhead body text underneath in 5–10 words. Bottom: '@alliancecobrinhaclark'. Tone: reflective, forward-looking — the voice of the academy."
+    }
+  ]
+}

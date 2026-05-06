@@ -1,0 +1,186 @@
+{
+  "$comment": "Caption + hashtag config for caption-library skill. Pillar-keyed pools. Editable by anyone on the team — skills re-read on every run. Update tone_notes / examples freely as voice evolves.",
+
+  "voice": {
+    "max_lines": 2,
+    "tone": "community-first, warm, settled, never sales",
+    "voice_overs_in_video": "FORBIDDEN — silent footage + on-screen text only",
+    "default_signoff": "@alliancecobrinhaclark",
+    "default_signoff_in_caption": false,
+    "$comment_signoff": "Account handle is in the design, not the caption. Set default_signoff_in_caption: true if Vhinz wants it appended to every IG caption."
+  },
+
+  "banned_phrases": [
+    "join now",
+    "sign up",
+    "limited slots",
+    "limited time",
+    "don't miss out",
+    "transform your body",
+    "level up your fitness",
+    "unleash",
+    "crush it",
+    "best in town",
+    "click the link",
+    "DM us to book",
+    "book now"
+  ],
+
+  "approved_ctas": [
+    "The mat is open. Come see what we're building.",
+    "Stop scrolling. Come train.",
+    "Words won't show you what we've built. The mat will.",
+    "Come feel what belonging looks like on the mat.",
+    "Your first class is on us. Come meet the team.",
+    "We don't sell Jiu-Jitsu. We invite you to be part of something.",
+    "This community has a spot for you. Come find yours.",
+    "42 members built this together. Come be part of what's next."
+  ],
+
+  "pillars": {
+    "community_daily": {
+      "tone_notes": "Settled, present, warm. Acknowledge the day or moment without overstating it. 1–2 short lines. The image leads.",
+      "examples": [
+        "Start of the week. See you on the mats.",
+        "Monday. The mat doesn't care what kind of week you had.",
+        "We train hard, but we enjoy the process.",
+        "The work between the highlights.",
+        "Friday on the mats. Tired. Smiling. Back tomorrow."
+      ]
+    },
+    "member_spotlight": {
+      "tone_notes": "First-person if a quote is available, third-person if not. Honest, specific. Name the journey, not the technique. Avoid 'success story' framing.",
+      "examples": [
+        "Started with zero experience. Still here three months later.",
+        "Why I started Jiu-Jitsu. Why I stayed.",
+        "Three stripes. Three months. One reason: the people.",
+        "Came for fitness. Stayed for the team."
+      ]
+    },
+    "value_trust": {
+      "tone_notes": "Educational, calm, accessible. No jargon walls. The coach speaks (silent clip + text). Lead with what someone learns, not what we offer.",
+      "examples": [
+        "Why fundamentals matter.",
+        "What every white belt should know on day one.",
+        "The first three things you'll learn.",
+        "Posture beats power."
+      ]
+    },
+    "kids_family": {
+      "tone_notes": "PARENT-FACING. The reader is a mom or dad watching from the sideline. Lead with what kids gain — confidence, listening, focus. Never sound like adult-class recruiting.",
+      "examples": [
+        "Confidence. Listening. A safe place to learn.",
+        "What 45 minutes on the mat builds in a kid.",
+        "Parents — this is what they look like after class.",
+        "Discipline starts here."
+      ]
+    },
+    "social_proof": {
+      "tone_notes": "Quietly confident. Let the image do the talking. Never use scarcity language. Numbers are okay if real (member counts, years, etc.).",
+      "examples": [
+        "Weekend training with the team.",
+        "Saturday open mat. Show up. Roll. Stay for coffee.",
+        "42 of us, building something.",
+        "Built together."
+      ]
+    },
+    "leader_voice": {
+      "tone_notes": "Reflective, forward-looking. The voice of the academy, not a pitch. Use 'we' often. Silent clip + text overlay only.",
+      "examples": [
+        "What we're building this week.",
+        "The reason we keep showing up.",
+        "Built together — one mat, one team.",
+        "This is the work behind the highlights."
+      ]
+    }
+  },
+
+  "hashtag_pool": {
+    "$comment": "12–15 hashtags per post. Always include all brand_anchors. Then add 8–11 from the rotating pool, weighted toward the slot's pillar. Avoid posting the exact same set two weeks in a row — IG flags repetition.",
+
+    "brand_anchors": [
+      "#AllianceCobrinhaClark",
+      "#BuiltTogether",
+      "#BJJClark",
+      "#JiuJitsuPampanga"
+    ],
+
+    "bjj_general": [
+      "#BJJ",
+      "#JiuJitsu",
+      "#BrazilianJiuJitsu",
+      "#JiuJitsuLifestyle",
+      "#JiuJitsuLife",
+      "#JiuJitsuFamily",
+      "#TeamCobrinha",
+      "#AllianceJiuJitsu",
+      "#OssBrother",
+      "#MatLife",
+      "#LifeOnTheMat"
+    ],
+
+    "local": [
+      "#Pampanga",
+      "#ClarkPampanga",
+      "#ClarkPhilippines",
+      "#PampangaFitness",
+      "#AngelesCity",
+      "#BJJPhilippines",
+      "#JiuJitsuPH"
+    ],
+
+    "by_pillar": {
+      "community_daily": [
+        "#BJJCommunity",
+        "#JiuJitsuCommunity",
+        "#TrainTogether",
+        "#ShowUp",
+        "#DoTheWork"
+      ],
+      "member_spotlight": [
+        "#BJJJourney",
+        "#JiuJitsuJourney",
+        "#WhyIRoll",
+        "#WhiteBeltJourney",
+        "#BJJStory"
+      ],
+      "value_trust": [
+        "#BJJFundamentals",
+        "#JiuJitsuFundamentals",
+        "#BJJBeginners",
+        "#WhiteBelt",
+        "#LearnJiuJitsu"
+      ],
+      "kids_family": [
+        "#KidsBJJ",
+        "#KidsJiuJitsu",
+        "#BJJKids",
+        "#KidsMartialArts",
+        "#DisciplineConfidenceFocus"
+      ],
+      "social_proof": [
+        "#OpenMat",
+        "#BJJTeam",
+        "#PackedMats",
+        "#BJJWeekend",
+        "#TeamBJJ"
+      ],
+      "leader_voice": [
+        "#BJJLeadership",
+        "#JiuJitsuLeadership",
+        "#OnTheMat",
+        "#BuiltTogether",
+        "#AllianceFamily"
+      ]
+    }
+  },
+
+  "rotation_strategy": {
+    "$comment": "Per ISO week, the caption-library skill picks: (4 brand anchors) + (5 from bjj_general rotated by week-modulo) + (3 from local rotated by week-modulo) + (3 from by_pillar[slot.pillar] rotated by week-modulo). Total = 15. Modulo formula in skill spec.",
+    "target_total": 15,
+    "anchors_count": 4,
+    "bjj_general_count": 5,
+    "local_count": 3,
+    "pillar_count": 3
+  }
+}
