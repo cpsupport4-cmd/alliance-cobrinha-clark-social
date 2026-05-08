@@ -64,26 +64,85 @@ The workhorse skill. Takes one slot ID, produces one complete review-ready packa
 
 Read `slot.mode` from `templates.json`. Two paths:
 
-#### 7A. `mode: "registered-master"` — Mon-Thu
+#### 7A. `mode: "registered-master"` — Mon-Fri
 
-This slot has a master template page in `slot.master_template`. Workflow:
+This slot has a master template page in `slot.master_template`. **Path validated 2026-05-08** against For Clark V2 (DAHJC_QKr0U) page 5 — every tool call below is confirmed working with the current Canva MCP.
 
-1. Note the master design ID (`slot.master_template.design_id`, e.g. `DAHJC_QKr0U`) and target page index (`slot.master_template.page_index`, 1–4).
-2. **Duplicate the master into a working design.** Try in this order based on what tools the Canva connector exposes:
-   - If a "duplicate-design" or equivalent tool exists, use it.
-   - Otherwise, use `start-editing-transaction` on the master, perform a no-op operation, and check whether the platform supports a "save as copy" path.
-   - Last resort: use `import-design-from-url` with the master's view URL to create a derivative.
-3. **Trim the working copy to a single page.** Use `perform-editing-operations` to delete the pages other than `page_index`. (If trimming isn't possible, leave all pages and let Vinz manually delete the unused ones in the Canva UI.)
-4. **Open editing transaction** on the working design (`start-editing-transaction`).
-5. **Replace the photo placeholder** on the target page with the new asset uploaded in Step 6. Use `perform-editing-operations` with an image-replace operation.
-6. **Replace the text overlay** with the slot's caption text. The caption comes from Step 9 (caption-library invocation) — when running registered-master mode, you may need to invoke caption-library BEFORE this step. Use `perform-editing-operations` with a text-replace operation.
-7. **Commit the transaction** (`commit-editing-transaction`).
-8. Capture `design_id` and `edit_url` of the working design.
-9. Move the working design into the `Alliance Clark` folder (`destination_folder_id_resolved` from `templates.json`, currently `FAHFlJsvwyo`).
+1. **Read master config.** From `slot.master_template`: `design_id` (e.g. `DAHJC_QKr0U`), `page_index` (1–N), and `default_overlay_text`.
 
-**If any step in 7A fails** (tool not available, permission denied, master not found): fall back to 7B using `slot.fresh_generate_fallback_prompt`. Surface the failure to the user clearly so the master path can be debugged.
+2. **Duplicate master page into a new design** — single tool call:
+   ```
+   merge-designs(
+     type: "create_new_design",
+     title: "<slot.day>-<iso_week>-<slug>",      // e.g. "FRI-2026-W19-train-grow-laugh"
+     operations: [{
+       type: "insert_pages",
+       source: {
+         type: "design",
+         design_id: <master.design_id>,
+         page_numbers: [<master.page_index>]      // single-element array — only this page
+       }
+     }]
+   )
+   ```
+   Response: `job.result.design.id` is the new working design ID. `urls.edit_url` is the editable URL. `page_count` should be 1.
 
-#### 7B. `mode: "fresh-generate"` — Fri-Sun (and fallbacks)
+3. **Open editing transaction** on the new design:
+   ```
+   start-editing-transaction(design_id: <new_design_id>)
+   ```
+   Response includes:
+   - `transaction_id` — keep for subsequent operations
+   - `fills[]` — array of image/video fills with `element_id` and current `asset_id`
+   - `richtexts[]` — text elements with `element_id`, current text content, and position/dimension
+   - `pages[]` — page metadata; required for `perform-editing-operations`
+
+4. **Identify the swap targets in the response:**
+   - **Photo element** — typically the only image fill: `fills[0]` where `type === "image"`. Capture `fills[0].element_id`.
+   - **Main overlay text** — the WIDEST text element in `richtexts[]` (decorative bullet separators like `·` show up as narrow text elements; ignore them). Heuristic: pick the `richtexts[i]` whose `containerElement.dimension.width` is largest. Capture its `element_id`.
+
+5. **Determine the new overlay text:**
+   - If `slot.brief.md` contains a `force_overlay:` or operator-specified phrase from `slot.master_template.approved_alternative_overlays`, use it.
+   - Else use `slot.master_template.default_overlay_text` (e.g. `TRAIN • GROW • LAUGH` for FRI). Keeping the default is the consistent-week-over-week behavior; that's the point of registered-master mode.
+   - If the new text equals the current text, skip the text replacement operation entirely (saves a write).
+
+6. **Apply the swaps** in a single `perform-editing-operations` call:
+   ```
+   perform-editing-operations(
+     transaction_id: <transaction_id>,
+     page_index: 1,
+     pages: <pages array from start-editing-transaction response>,
+     operations: [
+       { type: "update_fill",
+         element_id: <photo_element_id>,
+         asset_type: "image",
+         asset_id: <newly_uploaded_canva_asset_id from Step 6>,
+         alt_text: "<descriptive alt text for the new photo>"
+       },
+       // Only include this if text needs to change (see Step 5):
+       { type: "replace_text",
+         element_id: <text_element_id>,
+         text: "<new_overlay_text>"
+       }
+     ]
+   )
+   ```
+
+7. **Commit** to save:
+   ```
+   commit-editing-transaction(transaction_id: <transaction_id>)
+   ```
+
+8. **Move** the new design to the Alliance Clark folder:
+   ```
+   move-item-to-folder(item_id: <new_design_id>, folder_id: "FAHFlJsvwyo")
+   ```
+
+9. Capture the final `design_id` and `edit_url` for the report. Done — registered-master path complete, identical layout to master with new photo and (optionally) new overlay text.
+
+**Fallback contract.** Fall back to 7B (fresh-generate) ONLY if a tool returns an error — not because the path looks complex. The 7A flow above is proven; an unexpected error means something genuinely broke and merits surfacing to the operator. If 7A succeeds, do NOT also run 7B.
+
+#### 7B. `mode: "fresh-generate"` — Sat-Sun (and fallbacks from 7A)
 
 - Call Canva `list-brand-kits` if `templates.json → canva.brand_kit_id_resolved` is not yet cached. Find the Alliance Cobrinha Clark kit. Cache the ID.
 - Call Canva `generate-design` with:
@@ -94,6 +153,11 @@ This slot has a master template page in `slot.master_template`. Workflow:
 - Receive 4 candidates.
 - Call `create-design-from-candidate` on candidate index 0.
 - Capture `design_id` and `edit_url`.
+- **Banned-phrase post-check (mandatory).** After the design is materialized, call `get-design-content(design_id, content_types: ["richtexts"])`. Aggregate all returned text. Lowercase it. For each phrase in `brand/caption-pool.json → banned_phrases`, check `phrase.lower() in design_text.lower()`.
+  - If a banned phrase is detected:
+    1. Try once: call `create-design-from-candidate` on a different candidate index (1, 2, or 3 from the original `generate-design` response). Re-run the post-check.
+    2. If still hit OR no more candidates: FAIL with `"Generated design contains banned phrase '<phrase>' in its visible text. Canva's generate-design + brand kit ignored the prompt's banned-phrase instructions. Falling back to manual review — open the design URL and either edit the offending text in Canva, or re-run with a tighter generation_prompt that explicitly forbids the leaked phrase."` Do NOT auto-fall-back to a different generation strategy — surface the issue.
+  - This check exists because the W19 FRI run (commit `0af2d40` aftermath) leaked "Join us:" into the design itself. The caption-library banned-phrase filter only covers `caption.md`; this check covers what `generate-design` puts INTO the visual.
 - Move design into the `Alliance Clark` folder.
 
 ### 9. Generate caption + hashtags
@@ -150,9 +214,11 @@ Surface back:
 | Brand kit not found | "Alliance Cobrinha Clark brand kit not in this Canva account. Confirm the brand kit URL in templates.json points to a kit accessible to the connected Canva account." |
 | `generate-design` returns 0 candidates | "Canva returned no candidates — usually a transient. Re-run; if it fails twice, simplify the generation_prompt in templates.json." |
 | Existing draft, user says no | Stop cleanly. Don't write anything. Report path to existing draft. |
-| Master template duplicate fails (7A) | "Couldn't duplicate master design <id>. Falling back to fresh-generate with explicit aesthetic override. Master path needs debugging — check Canva tool availability." Continue with 7B. |
-| Master template editing transaction fails (7A) | "Editing transaction on master copy failed at step <X>. The master pattern requires duplicate + trim + edit + commit; one of those isn't available with the current tool set. Falling back to fresh-generate." Continue with 7B. |
-| Master template page not found at index | "Master design <id> doesn't have page <N>. Confirm For Clark V2 (DAHJC_QKr0U) still has 4 pages and the master_template.page_index in templates.json is current." Halt — don't fall back, this is a config mistake worth fixing properly. |
+| `merge-designs` returns error (7A step 2) | Surface the error verbatim. Common causes: master design_id is wrong, master was deleted, page_numbers references a page that no longer exists. Halt — don't fall back. Confirm `templates.json → slots[N].master_template.design_id` and `page_index` are current. |
+| `start-editing-transaction` fails on duplicated design (7A step 3) | Surface the error. The duplicate from step 2 succeeded, so the design exists; transaction failure is rare. May be a transient API issue — retry once before falling back. |
+| Element ID detection ambiguous (7A step 4-5) | If `fills[]` has multiple image fills or `richtexts[]` has multiple wide text elements, the heuristic can pick wrong. Surface to operator: "Master page <N> has unexpected element structure (M image fills, N wide text elements). Inspect the master to confirm it has one hero photo and one main overlay text element. Skill picked element_id `<picked>` — operator can override via `--photo-element-id` and `--text-element-id` arguments." |
+| Banned phrase in fresh-generate output (7B post-check) | "Generated design contains banned phrase '<phrase>' in its visible text. Tried regenerating from candidate index 1; still hit. Open the design URL and either edit the offending text in Canva, or re-run with a tighter generation_prompt." Halt — operator decides how to proceed. |
+| Master template page not found at index | "Master design <id> doesn't have page <N>. Confirm For Clark V2 (DAHJC_QKr0U) page count and the master_template.page_index in templates.json." Halt — config mistake. |
 
 ## Notes for the operator
 
