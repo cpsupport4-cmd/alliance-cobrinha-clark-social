@@ -21,6 +21,18 @@ The system is operational but has gaps that will surface as the team uses it wee
 
 ## Feature 1 — Used-asset archival in Drive
 
+### Technical feasibility (verified 2026-05-08)
+
+**Possible — with one mechanism adjustment from the original spec.**
+
+Drive MCP tools confirmed available: `copy_file`, `create_file` (used for folders too), `search_files`, `get_file_metadata`, `get_file_permissions`.
+
+Drive MCP tools NOT exposed: `delete_file`, `update_file_metadata` (can't change parents). This means we **can't truly move** a file — only copy. Original stays in the source folder.
+
+**Mechanism adjustment:** the dated archive folder under each pillar still gets built (via `copy_file` + `create_file`), but it serves as a **human-facing organizational copy**, not the dedup mechanism. The actual "this asset has been used" check reads from the **repo** — every `content/*/approved/*/draft.json` already records `source_asset.drive_file_id`. Aggregating those gives a complete used-IDs set. `produce-post` filters its Drive search against that set.
+
+Net user-visible behavior matches the original spec; only the under-the-hood data flow changes.
+
 ### Why it matters
 
 `produce-post` currently picks the **newest** file from each Drive subfolder. After a post is published, the asset stays in the source folder. Two problems compound over time:
@@ -55,13 +67,14 @@ Community/
 1. **Add archival config to `templates.json`** under a new top-level key:
    ```json
    "archival": {
-     "mode": "copy",
+     "mode": "copy_only",
      "archive_subfolder_name": "archive",
      "date_folder_format": "YYYY-MM-DD",
+     "dedup_source": "repo",
      "skip_archive_for_pillars": []
    }
    ```
-   `mode: "copy"` keeps the original (safer); switch to `"move"` only after verifying the Drive MCP has a delete tool.
+   `mode: "copy_only"` is locked — the Drive MCP doesn't expose a delete operation, so move semantics aren't available. `dedup_source: "repo"` makes explicit that the used-IDs check reads from the repo, not from Drive folder structure.
 
 2. **Update `.claude/skills/post-approve/SKILL.md`** with new step between current Step 5 (copy draft → approved) and Step 6 (drop-time reminder):
 
@@ -69,29 +82,54 @@ Community/
    - Locate the asset's parent folder (the slot's pillar subfolder)
    - Check if `<parent>/archive/<YYYY-MM-DD>/` exists; create if not (use Drive `create_file` with mimeType `application/vnd.google-apps.folder`)
    - Copy the asset into the date folder via `copy_file`
-   - Write `archived_assets` list back into `approved/draft.json`
+   - Write `archived_assets` list back into `approved/draft.json` so the dedup logic in step 3 can find it
 
-3. **Update `.claude/skills/produce-post/SKILL.md` Step 4 (Drive asset search)** to filter out archived assets:
-   - When listing files in the pillar subfolder, exclude any whose path contains `/archive/`
-   - This is the safety net: even if `copy` mode leaves the original in place, future runs won't re-pick what's been archived (because the archived copy lives under `archive/` and the original is what gets considered)
+3. **Update `.claude/skills/produce-post/SKILL.md` Step 4 (Drive asset search) — the dedup logic:**
+   - Before searching Drive, scan the repo: walk all `content/*/approved/*/draft.json` files (with `Glob` + `Read`), collect every `source_asset.drive_file_id` into a `used_ids` set
+   - Drive search returns candidate files; filter the candidate list to drop any whose `id` is in `used_ids`
+   - ALSO filter out any candidate whose `path` includes `/archive/` (defense in depth — keeps human-archived copies out of the running too)
+   - Pick newest of what's left
 
-4. **New skill: `unarchive`** for accidental archival. Inputs: pillar subfolder + asset name. Moves the file back to active.
+4. **New skill: `unarchive`** for accidental archival. Inputs: slot ID + week. Removes the matching entry from `approved/draft.json → archived_assets` (so the asset re-enters the dedup-eligible pool) and optionally deletes the Drive copy in `archive/<date>/` via `copy_file` to a trash location (since no `delete_file`, manual cleanup may be needed).
 
-5. **Optional one-shot: `bulk-archive-history`** — walks the past 4-12 weeks of `content/*/approved/` directories, collects every `source_asset.drive_file_id`, and archives them retroactively. Useful when first turning the feature on so the slate isn't blank.
+5. **Optional one-shot: `bulk-archive-history`** — walks past `content/*/approved/` directories, collects every `source_asset.drive_file_id`, populates `archived_assets` lists retroactively, and copies the originals into dated archive folders in Drive. Useful when first turning the feature on so the slate isn't blank.
+
+6. **No-op for `weekly-status`**: the read-only dashboard doesn't need to know about archival. The dedup logic is internal to `produce-post`. Optional enhancement: show "N assets used in 2026-W19" as a stat.
 
 ### Open questions for the operator
 
-- **Copy vs Move?** Default: copy. Confirms whether the Google Drive MCP has a delete operation. Move is cleaner long-term but harder to undo.
-- **Date format?** `YYYY-MM-DD` is the working assumption. ISO-week format (`2026-W19`) would group archives by week instead of day — cleaner for weekly review.
+- **Date format?** `YYYY-MM-DD` is the working assumption. ISO-week format (`2026-W19`) would group archives by week instead of day — cleaner for weekly review. Worth deciding before backfilling.
 - **Carousel posts (see Feature 2):** if a single post uses 5 assets, archive all 5? Yes — the `archived_assets` field in `approved/draft.json` becomes a list.
+- **Unarchive cleanup:** when un-archiving, do we leave the Drive copy in `archive/<date>/` or rely on the operator to delete it manually via the Drive UI? Lacking `delete_file`, fully-clean unarchive isn't possible from the skill. Recommend: leave the Drive copy alone; only update the repo's `archived_assets` field. Drive copy clutter is a minor cosmetic problem, not a functional one.
+- **What if Drive folder structure changes?** If Ram/Steph reorganize the pillar subfolders, the `archive/<date>/` folders inside might get orphaned. Detection: a quick sanity check in `weekly-status` that looks for archive folders in unexpected parents.
 
 ### Effort estimate
 
-~2-3 hours of skill writing + testing. Most of the work is in `post-approve` (~80 lines added to SKILL.md), the `produce-post` filter (~10 lines), and one round of testing on a real post.
+~3 hours of skill writing + testing. Most of the work is in `post-approve` (~50 lines added — the dated-folder creation + copy is straightforward) and `produce-post` Step 4 (~20 lines for the repo-scan + filter). One real-post test to confirm the archive folder gets created correctly and the next produce-post run skips the used asset.
 
 ---
 
 ## Feature 2 — Carousel skill (`produce-carousel`)
+
+### Technical feasibility (verified 2026-05-08)
+
+**Possible — with one piece needing run-time validation.**
+
+Canva MCP tools confirmed available: `generate-design`, `generate-design-structured`, `create-design-from-candidate`, `start-editing-transaction`, `perform-editing-operations`, `commit-editing-transaction`, `get-design-pages`, `merge-designs`, `import-design-from-url`, `upload-asset-from-url`, `move-item-to-folder`, `resize-design`.
+
+The clear-path pieces work:
+- Cover slide via existing `registered-master` flow (already proven to be invocable in this MCP set)
+- Each support slide via `generate-design` + `create-design-from-candidate` (proven by W19 FRI run)
+
+**The one uncertainty:** `merge-designs` exists, but its actual behavior for combining a master-derived cover + multiple fresh-generated support slides into a single ordered multi-page Canva design hasn't been tested. Specifically:
+
+- Does it preserve page order based on the input array?
+- Does it handle the cover (which may have been derived from `For Clark V2` page N) plus N independently-generated 1-page designs?
+- What's the resulting design's editability — is it one editable design, or a flattened/locked combination?
+
+**Fallback if `merge-designs` doesn't behave as needed:** output each slide as its own Canva design, return the list of design IDs to the operator, and the team manually combines them in the Canva editor (drag-and-drop pages from the design list panel — Canva's UI supports this). That's still 70-80% automation vs. today's "build the whole carousel by hand."
+
+So both branches are viable; the merge-designs branch is the prettier outcome but the slide-list fallback is reliably implementable today.
 
 ### Why it matters
 
@@ -192,12 +230,16 @@ Implementation: a `support_slide_templates` array in `templates.json` mapping sl
 
 - **Slide count default:** 5? 7? Depends on what your carousels typically are. If most are 4-5 slides, lock that default.
 - **Concept brief — required or optional?** Required gives better results; optional lets the operator skip when there's no specific story. Recommend optional with a sensible default behavior.
-- **Cover slide always from master, or optional?** Recommend always from master for Mon-Thu (consistency), free generate for Fri-Sun (no master exists).
+- **Cover slide always from master, or optional?** Recommend always from master for Mon-Thu (consistency), free generate for Fri-Sun (no master exists yet — see Tier 1 #1).
 - **Support slide template:** does the team want to design specific support templates (Path B), or are full-bleed photo slides enough for now (Path A)?
+- **`merge-designs` test (technical):** before fully implementing, run a one-shot test: generate 3 single-page designs, call `merge-designs` on them, inspect whether the result is a single 3-page design with preserved order and editable elements. ~10 minutes of investigation. The answer determines whether we go full-merge or fall back to slide-list output. Do this before writing `produce-carousel/SKILL.md`.
 
 ### Effort estimate
 
-Path A: ~4-6 hours including testing.
+Path A:
+- ~10 min: `merge-designs` smoke test (resolves the uncertainty)
+- ~4-6 hours: skill implementation + test run on one real slot
+
 Path B: add another 2-4 hours for designing support templates and skill changes.
 
 ---
