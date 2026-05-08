@@ -142,6 +142,14 @@ This slot has a master template page in `slot.master_template`. **Path validated
 
 **Fallback contract.** Fall back to 7B (fresh-generate) ONLY if a tool returns an error — not because the path looks complex. The 7A flow above is proven; an unexpected error means something genuinely broke and merits surfacing to the operator. If 7A succeeds, do NOT also run 7B.
 
+**Transaction TTL — important.** Editing transactions expire if too much time passes between `start-editing-transaction`, `perform-editing-operations`, and `commit-editing-transaction`. Validated 2026-05-08 against design DAHJEaANkc4: a transaction returned "transaction not found" on commit when minutes elapsed between operations (likely due to internal TTL plus interleaved non-Canva tool calls). Mitigation: **keep steps 3–7 in tight succession with no intervening non-Canva work.** If a commit fails with "transaction not found":
+
+1. Open a fresh transaction with `start-editing-transaction`
+2. Re-apply the same operations via `perform-editing-operations`
+3. Commit immediately
+
+The retry pattern is inexpensive — the duplicated design from step 2 still exists; only the in-flight edit state is lost. Don't restart from `merge-designs`.
+
 #### 7B. `mode: "fresh-generate"` — Sat-Sun (and fallbacks from 7A)
 
 - Call Canva `list-brand-kits` if `templates.json → canva.brand_kit_id_resolved` is not yet cached. Find the Alliance Cobrinha Clark kit. Cache the ID.

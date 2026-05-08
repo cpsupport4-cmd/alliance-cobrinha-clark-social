@@ -1,0 +1,43 @@
+{
+  "slot_id": "04-thu-kids-family",
+  "iso_week": "2026-W20",
+  "scheduled_drop_date": "2026-05-14",
+  "scheduled_drop_time_pht": "19:00",
+  "generated_at_utc": "2026-05-08T07:25:00Z",
+  "mode_attempted": "registered-master",
+  "mode_used": "registered-master",
+  "master_template": {
+    "design_id": "DAHJC_QKr0U",
+    "design_title": "For Clark V2",
+    "page_index": 4
+  },
+  "canva_design_id": "DAHJEaANkc4",
+  "canva_edit_url": "https://www.canva.com/d/QXnNP7kESLyxg9H",
+  "canva_view_url": "https://www.canva.com/d/M3AsK0gWSJ-uJbC",
+  "canva_design_title": "THU-2026-W20-kids-family",
+  "canva_folder_id": "FAHFlJsvwyo",
+  "overlay_text_used": "Confidence / Listening / SAFE PLACE TO LEARN",
+  "overlay_text_source": "master_default_unchanged",
+  "source_asset": {
+    "drive_file_id": "1Eov1IDZymBBDZbP77n9RA9PZ1Di2giS6",
+    "drive_file_name": "photo_2026-05-06_12-41-17.jpg",
+    "drive_view_url": "https://drive.google.com/file/d/1Eov1IDZymBBDZbP77n9RA9PZ1Di2giS6/view?usp=drivesdk",
+    "drive_modified_time_utc": "2026-05-06T04:41:17Z",
+    "canva_asset_id": "MAHJEVJpkXg",
+    "canva_smart_tags": ["uniform", "indoor", "training", "sport", "protect", "gym", "fight", "safety", "people", "sit", "young", "professional", "leisure", "instructor", "coach"]
+  },
+  "brief_override_used": null,
+  "production_steps_executed": [
+    "drive_search_kids_family_subfolder",
+    "drive_get_file_permissions",
+    "canva_upload_asset_from_url",
+    "canva_merge_designs_create_new_design_from_master_page_4",
+    "canva_start_editing_transaction",
+    "canva_perform_editing_operations_update_fill",
+    "canva_commit_editing_transaction (retry — first transaction expired)",
+    "canva_move_item_to_alliance_clark_folder"
+  ],
+  "production_notes": "First end-to-end run of registered-master mode after the merge-designs path was implemented (commit 69f252b). All steps succeeded except the FIRST commit attempt which returned 'transaction not found' — the transaction had expired between perform-editing-operations and commit-editing-transaction (likely due to TTL or system-reminder pauses). Retried with a fresh transaction, photo swap re-applied, immediate commit succeeded. Worth flagging in SKILL.md: keep perform-editing-operations and commit-editing-transaction in tight succession with no intermediate non-Canva tool calls.",
+  "review_notes": "The new photo's composition differs from the master's original — kids+coach are positioned more centrally/lower in the frame. The text overlay 'CONFIDENCE / LISTENING / SAFE PLACE TO LEARN' now sits over the photo content rather than clean negative space below it. Architecture works mechanically; photo selection for THU should ideally have a similar bottom-area negative-space composition to match the master's design intent. Consider this a finding for asset capture guidance to Ram/Steph rather than a system bug.",
+  "status": "draft"
+}
