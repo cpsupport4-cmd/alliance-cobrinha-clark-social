@@ -46,61 +46,79 @@ The `caption-library` skill (Step 6) enforces banned-word filtering automaticall
 
 ---
 
-## Visual identity (observed from brand kit doc `DAHGJQJqIGc`, May 2026)
+## Visual identity — TWO LAYERS
 
-### Wordmark
+This system has two visual identities to be aware of. **Practice supersedes documentation.**
 
-`ALLIANCE JIU JITSU CLARK` — composed as `ALLIANCE JIU JITSU` + `by` + `CLARK` lockup. The `CLARK` badge is the dominant logo unit on social posts.
+### Layer 1 — Brand kit documentation (intent)
 
-### Colors
+The Cobrinha Clark Brand Kit doc (Canva design `DAHGJQJqIGc`) describes a **black + gold + Helvetica** identity:
 
 | Role | Token | Hex |
 |------|-------|-----|
 | Signature accent | Gold | `#FED52E` |
 | Primary background | Black | `#000000` |
-| Inverted background | White | `#FFFFFF` |
 | Accent — near-black | Charcoal | `#0a0a06` |
 | Accent — dark slate | Slate | `#26343b` |
 
-The signature color is **gold (#FED52E) on black**. White is the inverted variant. Slate (#26343b) is for secondary surfaces/cards. Use sparingly — the gold is the brand.
+Headlines: Helvetica Now. Subheads: Montserrat. Both sans-serif.
 
-### Typography
+**This is the brand's stated intent.** The Canva brand kit `kAGdeHDeWjQ` is supposed to auto-apply these tokens during `generate-design`.
 
-| Role | Font |
-|------|------|
-| Headline | **Helvetica Now** |
-| Subheadline / body | **Montserrat** |
+### Layer 2 — Published practice (reality)
 
-Both sans-serif. No serif anywhere. Modern, athletic, clean — consistent with the BJJ + community-first positioning, not the LA build's serif aesthetic.
+What actually gets published is **radically simpler** — the canonical reference is `For Clark V2` (`DAHJC_QKr0U`), the team's working master design used for Mon–Thu carousel covers. Page 4 was published as the THU 2026-05-07 kids/family post.
 
-### Notes for generation
+**The published aesthetic:**
 
-- Canva brand kit ID auto-applies during `generate-design`. ID: `kAGdeHDeWjQ` (unnamed kit, the only one besides "Nazareth Consulting" in this account).
-- The brand kit may contain different visual tokens than the documentation design — when the first `produce-post` run lands, compare its output against this section and patch if drift is observed (LA pattern).
-- If generate-design produces black + gold output: documentation matches the auto-apply kit.
-- If it produces black + tan/beige (LA's aesthetic): the auto-apply kit is shared with LA and Clark's gold isn't actually configured in Canva. Fix would be to either configure Clark colors in the kit, OR add explicit color references to each slot's `generation_prompt` in `templates.json`.
+- **Full-bleed photo** — photo occupies 100% of canvas, edge to edge
+- **No frames, no panels, no decorative shapes**
+- **Text overlay** — white sans-serif, uppercase, stacked, bottom-right corner. 1–3 short lines max
+- **No gold visible** — the documented signature color does not appear in published work
+- **No graphic logo added** — brand presence comes from the gym wall wordmark visible in the photo itself, plus the IG account handle in the platform UI
+- **Editorial / documentary** aesthetic — Magnum Photos meets restrained athletic brand. The photo is the design.
 
-### Logo placement (working assumption — refine after first draft)
+**Practice supersedes documentation.** When generating new posts, match Layer 2.
 
-- Bottom-right corner of every post: `@alliancecobrinhaclark` text mark
-- Wordmark / CLARK badge: top-left or top-center on hero designs (Saturday social proof, Sunday leader voice especially)
-- Safe zone: 80px on all edges of 1080×1350 / 1080×1920 frames
+### Why the gap matters
+
+The auto-apply Canva brand kit `kAGdeHDeWjQ` is shared between Clark and the LA build. It produces black + tan + serif (the LA aesthetic), not Clark's documented gold + black + Helvetica, and not Clark's published practice (full-bleed + minimal sans-serif overlay).
+
+Confirmed in the W19 first-draft test — the Friday community post came back with a black frame + serif "Train. Laugh. Grow." headline, neither the documented nor the practiced aesthetic.
+
+**Fix path (locked in `templates.json`):**
+
+- For the high-leverage slots (Mon–Thu), use **registered-master mode** with For Clark V2 pages 1–4. The system duplicates the master and edits photo + text. Auto-apply kit is bypassed.
+- For the remaining slots (Fri–Sun), use **fresh-generate** with prompts that explicitly forbid the auto-apply kit's defaults: "NO frames, NO gold, NO serif fonts, NO graphic logo." Override at the prompt level.
+
+### Wordmark
+
+`ALLIANCE JIU JITSU CLARK` — composed as `ALLIANCE JIU JITSU` + `by` + `D'Cobrinha` lockup. The `CLARK` badge is the dominant unit. **Used in the gym wall, not added to social posts.**
+
+### Logo placement on social posts
+
+- **No graphic logo added in design.** The published pattern relies on the wordmark visible in the gym (when the photo includes the wall) plus the IG account handle in the platform UI.
+- The IG handle `@alliancecobrinhaclark` is NOT added to the design itself — it's already in the IG post UI.
+- Safe zone: 80px on all edges of 1080×1350 frames.
 
 ### Photo treatment
 
-- Hero image dominates the composition (60–70% of canvas)
-- Black or slate borders / vignettes acceptable
-- Gold should appear as text accent or small decorative element, NOT large fill (loud at scale)
+- Full-bleed, edge-to-edge.
+- No vignettes, no borders, no shape masks (no rounded corners, no circles).
+- Composition must leave clean negative space (typically lower-right or lower-left) for the text overlay.
+- Photo selection must match the slot's pillar — kids/family for THU, post-class warmth for FRI, full-room scale for SAT, leadership/wide-shot for SUN.
 
-### Theme signature (locked May 2026 — pre-first-draft)
+### Theme signature (locked from published practice, May 2026)
 
 ```
-Background:        Black dominant, slate accents on cards
-Decorative motifs: Gold rule lines, gold underlines on key headlines
-Headline:          HELVETICA NOW, white or gold, top-left or top-center
-Subhead:           MONTSERRAT, white at 70% opacity
-Photo:             Hero photo full-bleed or large frame, no shape masks
-Logo:              CLARK wordmark or @handle bottom-right
+Background:        Photo is the background. Full-bleed.
+Decorative:        None. Photo carries all visual weight.
+Text overlay:      White, sans-serif (Helvetica), uppercase, stacked.
+                   Bottom-right or bottom-left. 1-3 lines max.
+                   No background panel — text directly on photo.
+Logo:              None added in design. Brand from photo + IG UI.
+Color:             None graphic. Photo provides all color.
+Aesthetic:         Editorial / documentary. Anti-design.
 ```
 
-Refine after observing the first 2–3 generated drafts.
+For the structured version that skills read at runtime, see `templates.json → theme_signature`.
