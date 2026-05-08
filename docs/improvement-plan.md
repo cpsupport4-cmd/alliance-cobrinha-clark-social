@@ -248,6 +248,214 @@ Path B: add another 2-4 hours for designing support templates and skill changes.
 
 Beyond the two features above, here's a ranked list of other valuable additions. Format: `[effort] [impact] — name — what it does — why it matters`.
 
+### Tier 0 — Ops infrastructure (foundational; build before features)
+
+Not new functionality — runtime plumbing that makes the existing features run reliably without manual operator action each morning. Earns its keep by removing friction from a daily ritual the operator otherwise has to remember.
+
+1. **`[15-30min build + investigation] [HIGH] Windows Task Scheduler for daily-check.`**
+
+   **Goal:** at 9:00 AM PHT each day, `daily-check` fires automatically. Tomorrow's draft + caption + hashtags are sitting in `content/<iso-week>/<slot>/drafts/` and the matching Canva folder by the time the operator opens their laptop. Eliminates the "did I remember to run daily-check this morning?" friction — the highest-frequency manual step in the system.
+
+   **Why it's foundational:** every other improvement (Feature 1 archival, Feature 2 carousel, content gap detector, etc.) assumes daily-check actually runs every day. If it gets skipped, drafts pile up missing and the team falls back to manual content creation. Automating the trigger is the difference between a system the operator runs and a system that runs the operator.
+
+   **Implementation paths to investigate (~15 min) before building (~15 min):**
+
+   - **Path A — Claude Code CLI headless mode.** If `claude` is on PATH and supports `--print` (or equivalent) for non-interactive runs, a scheduled task runs:
+     ```powershell
+     cd "C:\Users\Vhinz Saguinsin\alliance-cobrinha-clark-social"
+     claude --print "daily check" > "logs/daily-check-$(Get-Date -Format 'yyyy-MM-dd').log"
+     ```
+     **Open question:** does Claude Code CLI in headless mode have the Canva + Drive + GitHub MCPs available? In this conversation we observed the CLI starting without them and only getting them mid-session via reconnection. If headless mode doesn't auto-attach the connectors, this path fails silently.
+
+   - **Path B — Claude Desktop URI scheme launch.** If Claude Desktop supports a deeplink like `claude://chat?prompt=daily+check`, a scheduled task could open the desktop app with the prompt pre-filled. Operator still has to be physically at the machine and click send. Reduces friction but doesn't eliminate it. **Open question:** does the URI scheme exist? Worth a quick test.
+
+   - **Path C — Notification-only scheduler.** Task Scheduler fires a Windows notification at 9 AM PHT: "Run daily-check in Claude." Operator opens Claude Desktop and types it. Lowest tech friction, highest human friction. Useful as a stopgap if A and B don't work.
+
+   - **Path D — claude.ai scheduled tasks.** claude.ai may have a built-in scheduling/recurring task feature for projects. If yes, configure there directly — no Windows scheduling needed. **Open question:** is this a Pro/Team feature, and is it in your account?
+
+   **Recommended sequence:** spend ~15 min testing Path A first (if it works, this is by far the cleanest). Fall back to D, then B, then C in that order. Document the chosen path in `docs/runbook.md` so the team can re-create the scheduled task if a Windows reinstall ever wipes it.
+
+   **Trade-off:** the scheduled run consumes context (and if Claude Code CLI, possibly a small amount of compute cost) every morning whether or not Drive has fresh assets. Accepted because `daily-check` has a clean "no new asset" failure mode — it just reports the gap and exits, no harm done.
+
+   **Other open questions:**
+   - Should the scheduled task also run `stories-pack` (the Clark plan calls 5–10 stories non-negotiable per day)? Probably yes — same time slot, same automation gain.
+   - Run on weekends? Yes — the 7-day calendar runs every day, weekend posts are part of it.
+   - Skip on Philippine holidays? Worth handling, but only after the basic scheduler works. Add a holiday-skip check as a follow-up.
+
+2. **`[~1h] [HIGH] Configurable daily-check modes — single-per-day (default) + whole-week batch via new `weekly-prep` skill.`**
+
+   **Goal:** preserve the current single-draft-per-day default (which keeps drafts fresh against rolling Drive uploads and current-event captions), while adding a `weekly-prep` skill that produces all 7 drafts in one run. Operator picks the mode based on the week's situation.
+
+   **Why it's foundational:** specific situations make single-per-day the wrong fit, and the operator currently has no clean alternative:
+
+   - Operator going on vacation Wed-Sun → needs the back half of the week drafted in advance
+   - Approvers (Jeff / Adrian / Ram) prefer reviewing a 7-post week as a coherent slate rather than seven separate daily one-offs
+   - Strategy / planning sessions where the team wants to see the whole week's narrative arc at once
+   - Asset capture pace is uneven — sometimes the slate fills up Sunday and stays full all week, other times it dribbles in
+
+   Without a batch mode, vacation coverage and slate reviews fall back to manually invoking `produce <slot>` seven times in a row. The operator could do it, but it's annoying friction at exactly the moment when batching would help most.
+
+   **Why single-per-day stays the default (and we don't replace it with batch):**
+
+   - **Drive freshness wins.** The Clark plan has Ram + Steph capturing daily, so Sunday's batch can't see Tuesday's photos because they don't exist yet. Single-per-day picks Tuesday's freshest asset on Tuesday morning — closer to the moment.
+   - **Caption voice is present-tense** ("Friday on the mats. Tired. Smiling. Back tomorrow.") and falls flat when written 4 days early.
+   - **Captions can reference current events** — last night's open mat, this morning's stripe ceremony, the new student who showed up Wednesday. Single-per-day captures that immediacy; batch can't.
+
+   **Two implementation paths:**
+
+   - **Path A — New `weekly-prep` skill.** Cleanest separation. `daily-check` stays single-purpose; `weekly-prep` is its own skill that loops `produce-post` over all 7 slots. Existing skill code doesn't change.
+   - **Path B — Add `--batch` flag to `daily-check`.** Same skill, dual mode. Smaller footprint but mixes two purposes in one place.
+
+   **Recommendation: Path A.** Cleaner mental model — single-purpose skills, one named after what it does. Easier to reason about, easier to schedule independently (see Tier 0 #1 — the Windows Task Scheduler can target `weekly-prep` for Sundays only and `daily-check` for Mon-Sat).
+
+   **Implementation steps when ready:**
+
+   1. Create `.claude/skills/weekly-prep/SKILL.md`. Inputs: `iso_week` (defaults to current). Loops `produce-post` over the 7 slots in `templates.json`. Skips slots that already have drafts (asks before overwriting). Writes a single `content/<iso-week>/week-summary.md` listing all 7 slots with status (drafted, skipped-existing, failed-no-asset).
+   2. Update `.claude/skills/README.md` catalog to include `weekly-prep` with usage examples ("weekly prep", "weekly prep for next week", "weekly prep for 2026-W21").
+   3. (Optional, depends on Tier 0 #1) Add a `templates.json` flag `auto_batch_on_sunday: true` so when the Windows Task Scheduler fires on Sunday it runs `weekly-prep` instead of `daily-check`. Mon-Sat fires `daily-check` as normal.
+
+   **Trade-offs:**
+
+   - **Token spike.** Batch does 7 `produce-post` invocations in one session instead of spread across the week. Total tokens roughly equal but lumpier distribution. Only matters if you're rate-limited on a single session.
+   - **Drift risk.** If the team makes a strategy adjustment Tuesday but Wednesday's draft was already generated Sunday, Wednesday's draft might not reflect the adjustment. Mitigation: `weekly-prep` writes the week-summary in a scannable format; operator can re-run any specific slot manually with `produce <slot>` to refresh.
+   - **Empty-slot handling.** A slot with no fresh asset in Drive fails per `produce-post`'s contract. In batch mode, fail loudly and continue with the other slots; report at the end which slots failed and why.
+
+   **Open questions for the operator:**
+
+   - Default invocation phrase? "weekly prep" / "produce week" / "batch produce" — any preference?
+   - Should batch mode auto-skip existing drafts silently, or always prompt before regenerating?
+   - On Sunday auto-batch (if adopted via the scheduler): trigger Sunday morning so Vinz has the week to design? Or Saturday night so the operator wakes Sunday to the slate already ready?
+
+3. **`[~3-4h] [HIGH] Drive intake folder + new `sort-intake` skill — auto-sort dumped assets into pillar subfolders.`**
+
+   **Goal:** Ram & Steph drop **every** captured asset into one Drive folder (`_intake/`) without thinking about pillars. A new `sort-intake` skill periodically classifies each asset and copies it into the correct pillar subfolder (Community, Member Spotlights, Coach-Student, Kids & Family, Events / Group Photos, Leader Voice). Capture-side friction drops from "pick the right folder per asset" to "drop and forget."
+
+   **Why it's foundational:** the current architecture asks Ram & Steph to make a taxonomy decision on every asset they capture. They're shooting at the gym in real-time — the last thing they want is to pause and think about which pillar a photo belongs to. That cognitive overhead reduces capture velocity and causes mis-filing (assets land in the wrong subfolder, which then trips up `produce-post`'s pillar-matched search). A dump folder lets them upload at the speed they shoot.
+
+   **Classification design (LOCKED — token-optimized):**
+
+   Operator decision (2026-05-08): minimize token spend through asymmetric handling. Videos are prefix-only; images use prefix → vision fallback in batched chunks with multiple pre-vision shortcuts.
+
+   - **Videos — PREFIX-ONLY. No vision attempt.** Video classification via keyframe extraction is the most expensive operation in the entire system (~5,000-15,000 tokens per video). Videos uploaded to `_intake/` **must** have a filename prefix (`c-`, `m-`, `cs-`, `k-`, `e-`, `l-`). If no prefix, the video auto-routes to `_intake/_review/` for manual operator classification. Zero vision tokens spent on video, ever. Trade-off: Ram/Steph must remember the prefix on video uploads or accept the manual review step.
+
+   - **Images — hybrid with cost-saving optimizations.** Same prefix system as videos, but with a vision fallback for images that don't have a prefix. The fallback runs through three pre-vision shortcuts before burning vision tokens:
+     - **EXIF metadata pre-pass.** Some cameras / phones embed scene tags in EXIF (people detection, focus subject hints). Cheap text read, sometimes enough to classify without vision.
+     - **Date-cluster propagation.** If a batch contains 20+ photos all timestamped within the same hour, vision-classify the first 3 only. If they confidently match a single pillar, apply that pillar to the rest of the cluster. Trades some accuracy for major savings on burst captures (event days).
+     - **Confidence threshold at 0.7.** Below threshold → route to `_review/` rather than retry vision. Operator's eyeballs are free; vision retries are not.
+   - **Image batching — chunks of 20 per sub-session.** Prevents context bloat that compounds vision costs as a single session processes more assets. The skill kicks off a fresh sub-session for each chunk and only keeps the final summary in the parent context. Without this, processing 100 images in one session would consume meaningfully more than 100× per-image cost (context grows non-linearly with each prior classification kept in memory).
+
+   - **Token budget hard cap.** The skill enforces `max_tokens_per_batch` (default 150,000). If a batch would exceed, surface a confirmation prompt to the operator: "30 unprefixed photos in this batch — estimated ~70k tokens for vision. Process / route-all-to-review / abort?" No surprise bills.
+
+   **Token cost analysis (concrete numbers):**
+
+   | Scenario | Per-asset | 100-asset batch |
+   |---|---|---|
+   | Asset with filename prefix (image OR video) | ~50-100 tokens | ~10k tokens |
+   | Image via vision fallback | ~2,000 tokens | ~160k tokens |
+   | Image resolved by EXIF / date-cluster shortcut | ~200-500 tokens | ~30k tokens |
+   | Video without prefix | 0 tokens (routed to `_review/`) | 0 tokens |
+
+   Realistic operating-cost expectations:
+
+   | Day type | Composition | Estimated cost |
+   |---|---|---|
+   | Normal day, 30 assets, 70% prefix adoption | 21 prefix + 9 vision | ~20k tokens |
+   | Big-event day, 100 assets, 70% prefix adoption | 70 prefix + 30 vision (with date-cluster) | ~50k tokens |
+   | Worst case — 100 assets, 0% prefix adoption, no clusters | 100 vision | ~250k tokens |
+   | Best case — 100 assets, 100% prefix adoption | 100 prefix | ~10k tokens |
+
+   The 25× spread between best and worst case is what makes prefix adoption a high-leverage team behavior. **Coach Ram/Steph on prefixes for big-event days specifically** — that's where the savings compound.
+
+   **Implementation steps when ready:**
+
+   1. **Drive structure additions:**
+      - Create `_intake/` at the parent folder level (sibling to the six pillar subfolders)
+      - Inside `_intake/`, also create `sorted/` (human-facing copy of files already processed) and `_review/` (low-confidence classifications that need a human eye)
+   2. **Create `.claude/skills/sort-intake/SKILL.md`.** Inputs: optional `since_timestamp` (defaults to last run). Token-optimized batched flow:
+
+      **Phase 1 — Inventory (cheap, all in main session):**
+      - List files in `_intake/` (exclude `_intake/sorted/` and `_intake/_review/`)
+      - Filter against `sorted_intake.json` in repo (skip already-processed IDs)
+      - For each remaining file, classify by type (image vs video) and check for filename prefix
+      - Build three buckets:
+        - **`prefix_bucket`** — has a recognized prefix → cheap routing, no vision needed
+        - **`video_no_prefix_bucket`** — videos without prefix → auto-route to `_review/` per `video_handling: "prefix_only"`
+        - **`image_no_prefix_bucket`** — images without prefix → vision pipeline (Phase 3)
+
+      **Phase 2 — Cheap routing for prefix + no-prefix-video files (main session, all done up front):**
+      - For each file in `prefix_bucket`: route by prefix → `copy_file` to pillar + `copy_file` to `sorted/<date>/`
+      - For each file in `video_no_prefix_bucket`: `copy_file` to `_review/` + log
+      - Update `sorted_intake.json` with one entry per file
+
+      **Phase 3 — Vision pipeline for unprefixed images (only when `image_no_prefix_bucket` is non-empty):**
+      - **Token budget check.** Estimate cost: `len(bucket) × ~2000 tokens`. If estimate exceeds `max_tokens_per_batch`, prompt the operator: "N unprefixed images in this batch — estimated ~Xk tokens. Process / route-all-to-review / abort?" Halt on operator response.
+      - **EXIF pre-pass (free).** For each image, read filename + EXIF metadata. If filename or EXIF reveals an obvious pillar hint (e.g. EXIF tag "kids" or filename contains "santi"), route by hint without vision.
+      - **Date-cluster grouping.** Group remaining images by `modifiedTime` clusters of `date_cluster_window_hours` (default 1h). For each cluster of ≥ 5 images:
+        - Vision-classify the first `date_cluster_sample_size` (default 3) images
+        - If all 3 confidently match the same pillar (≥ 0.85 each), apply that pillar to the entire cluster without further vision
+        - Else fall through to per-image vision for that cluster
+      - **Per-image vision in chunks.** For images still unclassified, split into chunks of `batch_chunk_size` (default 20). Each chunk runs in a fresh sub-session (sub-agent), processes its 20 images, returns a list of classifications + confidences. Parent session aggregates results. This bounds context bloat.
+      - For each classified image: if `confidence ≥ vision_confidence_threshold` (0.7), route to pillar; else route to `_review/`.
+
+      **Phase 4 — Reporting (back in main session):**
+      - For each file: `copy_file` to chosen destination (pillar or `_review/`) + `copy_file` to `_intake/sorted/<YYYY-MM-DD>/` for the audit trail
+      - Append entries to `sorted_intake.json` (file ID, original name, sorted_at, method used: `prefix` | `video_no_prefix_to_review` | `exif` | `date_cluster` | `vision`, destination pillar, confidence, token cost estimate)
+      - Print the summary block: total processed, by-method breakdown, by-pillar count, files sent to `_review/`, estimated token spend, where audit trail lives
+   3. **Update `templates.json`** with a new `intake` block (token-optimized defaults):
+      ```json
+      "intake": {
+        "intake_folder_name": "_intake",
+        "intake_folder_id_resolved": null,
+        "filename_prefix_map": {
+          "c-": "Community",
+          "m-": "Member Spotlights",
+          "cs-": "Coach-Student",
+          "k-": "Kids & Family",
+          "e-": "Events / Group Photos",
+          "l-": "Leader Voice"
+        },
+        "video_handling": "prefix_only",
+        "vision_confidence_threshold": 0.7,
+        "exif_pre_pass": true,
+        "date_cluster_propagation": true,
+        "date_cluster_window_hours": 1,
+        "date_cluster_sample_size": 3,
+        "batch_chunk_size": 20,
+        "max_tokens_per_batch": 150000,
+        "no_prefix_warn_threshold": 10,
+        "low_confidence_destination": "_review"
+      }
+      ```
+      Each field is enforced by the skill — they're not suggestions, they're guardrails. `video_handling: "prefix_only"` is the locked policy: videos without a prefix never trigger vision; they go straight to `_review/`. `max_tokens_per_batch` is the hard cap that triggers an operator prompt before exceeding.
+   4. **Add `sorted_intake.json` to `.gitignore`** (or commit it as repo state — see open question below).
+   5. **Wire into `daily-check`:** before the slot search runs, invoke `sort-intake` if there are unsorted files in `_intake/`. Operator wakes up to a sorted Drive AND tomorrow's draft in one ritual.
+   6. **Backfill option (one-shot skill `bulk-sort-intake-history`):** when the feature is first turned on, sort everything currently sitting in `_intake/` (or in the existing pillar subfolders if Ram/Steph want to re-classify). Useful only at adoption time; can delete the skill after first run.
+
+   **Trade-offs:**
+
+   - **Video classification quality vs. cost.** Locked: prefix-only on videos. Trade-off accepted — if Ram/Steph forget the prefix on a video, it goes to `_review/` for manual classification. No silent vision spend on videos.
+   - **Date-cluster propagation accuracy risk.** The "classify 3, propagate to 20" optimization assumes burst captures share a pillar. Usually true (a kids' class shoot produces 20 kids photos; an open mat produces 20 group photos). Occasional misfire: a mixed shoot where the photographer pivots mid-session. Mitigation: cluster propagation only fires when the 3 sample images all confidently match the *same* pillar (≥ 0.85 each). Mixed clusters fall through to per-image vision automatically.
+   - **Original stays in `_intake/`.** Same Drive constraint as Feature 1 — no `delete_file` exposed in the MCP. The original is left in `_intake/`; the `sorted/` subfolder is a human-facing copy. Periodic manual cleanup is needed (human deletes files from `_intake/` once they're sorted, OR `_intake/` just accumulates and the dedup logic via `sorted_intake.json` keeps things from being re-processed).
+   - **Order of operations.** `sort-intake` must run BEFORE `produce-post` for a given week, otherwise newly-dumped assets aren't in their pillar subfolders when `produce-post` searches. `daily-check` ordering handles this.
+   - **Sub-session orchestration.** The Phase 3 vision pipeline uses sub-agents to bound context. This adds a small amount of orchestration overhead (~2-3k tokens per chunk to start a sub-session) but prevents the much larger per-asset cost growth that would otherwise occur in a single-session loop.
+
+   **Locked design decisions (no longer open):**
+
+   - Video handling: prefix-only, no vision attempt. Unprefixed videos → `_review/`.
+   - Image batching: chunks of 20 in sub-sessions.
+   - EXIF pre-pass: enabled by default.
+   - Date-cluster propagation: enabled by default, 1-hour window, sample size 3.
+   - Token budget cap: 150k per batch with operator prompt before exceeding.
+   - `_review/` is the safety valve for any low-confidence case.
+
+   **Open questions for the operator:**
+
+   - **Prefix adoption commitment.** The 25× cost spread between best/worst case is real. Will Ram/Steph reliably use prefixes on big-event days (when batches exceed 50 assets)? Even partial adoption (50-70%) is plenty. Worth a short team conversation before turning this on.
+   - **`sorted_intake.json` location.** Commit to repo (full audit trail, but extra commits) OR leave as `.gitignore`d local state (no commit churn but loses history if the operator switches machines)? Recommendation: commit, with one daily aggregate update per `sort-intake` run rather than per-file commits.
+   - **Quality filter deferred to follow-up.** First version sorts everything. A future enhancement could reject blurry / dark / badly-composed assets up front. Not in v1.
+   - **Manual override sidecar deferred to follow-up.** First version classifies by prefix or vision. A future enhancement could let Ram/Steph drop a `<filename>.brief.txt` with `force_pillar: kids_family` to override. Add in v1.5 if `_review/` queue grows uncomfortably.
+   - **Should `sort-intake` chain into `daily-check` automatically, or stay opt-in?** Recommendation: chain on `daily-check`, but show the operator a summary BEFORE proceeding to slot search if any unprefixed images were processed. Lets operator catch big classification mistakes before they propagate to drafts.
+
 ### Tier 1 — High impact, low effort (build these first)
 
 1. **`[2h] [HIGH] Extend For Clark V2 to 7 pages.** Add Page 5 (FRI), Page 6 (SAT), Page 7 (SUN) masters to `For Clark V2`. Update `templates.json` to switch all 7 slots to `registered-master` mode. Result: zero-polish output for the entire week. Currently FRI/SAT/SUN are fresh-generate variability. **This is the single biggest win for visual consistency.**
