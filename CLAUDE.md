@@ -106,9 +106,20 @@ Sharing must be **"Anyone with the link → Viewer"** so Canva can fetch assets 
 
 ## Brand kit
 
-Canva brand kit: <https://canva.link/9dcx2ovypw69gig>
+Canva brand kit: <https://canva.link/9dcx2ovypw69gig> (resolved: design `DAHGJQJqIGc`, brand kit ID `kAGdeHDeWjQ`)
 
 Auto-applied during Canva generation. Captions inherit the brand voice from this file (`CLAUDE.md`), not from the brand kit.
+
+### Visual identity (locked May 2026 from brand kit doc)
+
+- **Wordmark:** `ALLIANCE JIU JITSU CLARK` (CLARK badge as dominant unit)
+- **Signature color:** Gold `#FED52E` on **black** background — gold is text accent, not fill
+- **Accents:** White (inverted), Charcoal `#0a0a06`, Slate `#26343b`
+- **Headline font:** Helvetica Now
+- **Subheadline / body font:** Montserrat
+- **Both sans-serif** — no serif anywhere
+
+Full visual spec lives in [`brand/README.md`](brand/README.md). Theme signature for skill use lives in `templates.json → theme_signature`.
 
 ---
 

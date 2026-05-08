@@ -6,10 +6,13 @@
 
   "canva": {
     "brand_kit_url": "https://canva.link/9dcx2ovypw69gig",
-    "brand_kit_id_resolved": null,
+    "brand_kit_documentation_design_id": "DAHGJQJqIGc",
+    "brand_kit_documentation_title": "Cobrinha Clark Brand Kit",
+    "brand_kit_id_resolved": "kAGdeHDeWjQ",
+    "$comment_brand_kit": "kAGdeHDeWjQ is the unnamed brand kit in this Canva account — same kit as the LA build. Whether its actual tokens match Clark's documentation (gold + black + Helvetica) or LA's (black + tan + serif) will be confirmed after the first produce-post run. If misaligned, see brand/README.md for fix options.",
     "destination_folder_name": "Alliance Cobrinha Clark",
     "destination_folder_id_resolved": null,
-    "$comment": "First produce-post run should resolve and cache the brand kit ID + destination folder ID, then patch this file."
+    "$comment_folder": "First produce-post run should resolve the destination folder ID and cache it here."
   },
 
   "drive": {
@@ -27,14 +30,18 @@
   },
 
   "theme_signature": {
-    "$status": "unobserved",
-    "$comment": "Filled in after the first real draft is generated. Per LA pattern, the brand kit's actual aesthetic only becomes clear once we see what generate-design produces. Update this with: dominant background, decorative motifs, headline treatment, photo placement, typography hierarchy.",
-    "background": null,
-    "decorative_motifs": null,
-    "headline_treatment": null,
-    "photo_placement": null,
-    "typography_hierarchy": null,
-    "reference_design_id": null
+    "$status": "observed_from_brand_kit_documentation",
+    "$comment": "Pulled from Cobrinha Clark Brand Kit (Canva design DAHGJQJqIGc) on 2026-05-08. Documentation specifies the visual identity but the auto-apply Canva brand kit may contain different tokens — first produce-post run will confirm. If drift is observed, either reconfigure the brand kit in Canva, or add explicit color references to each slot's generation_prompt.",
+    "reference_design_id": "DAHGJQJqIGc",
+    "background": "Black dominant. Slate (#26343b) for secondary surfaces and cards. White as inverted variant.",
+    "signature_color": "Gold #FED52E — text accent, rule lines, small decorative elements only. Never large fill (loud at scale).",
+    "decorative_motifs": "Gold underlines on key headlines. Gold rule lines as section dividers. Minimal — let the photo and typography breathe.",
+    "headline_treatment": "Helvetica Now, white or gold on black. Top-left or top-center. Bold, all-caps optional. Sentence-case for warmth.",
+    "subheadline_treatment": "Montserrat, white at ~70% opacity. Smaller than headline. Body weight, not bold.",
+    "photo_placement": "Hero photo dominates 60–70% of canvas. Full-bleed or large rectangular frame. NO shape masks (no rounded corners, no circles). Real over stylized.",
+    "typography_hierarchy": "Headline (Helvetica Now, bold) > Subhead (Montserrat, regular, 70% opacity) > Tagline / handle (Montserrat, small, white)",
+    "logo_placement": "@alliancecobrinhaclark text mark bottom-right of every feed post. CLARK wordmark / badge top-left or top-center on hero designs (Saturday social proof, Sunday leader voice especially).",
+    "safe_zone_px": 80
   },
 
   "slots": [
