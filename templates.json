@@ -183,9 +183,31 @@
       "dimensions": "1080x1350",
       "drop_time_pht": "19:00",
       "goal": "Belonging. End-of-week vibe, looser than Monday.",
-      "mode": "fresh-generate",
-      "$comment_no_master": "No master in For Clark V2 for Fri-Sun. Fresh-generate with the editorial aesthetic locked in the prompt below. Once we have 2-3 published Friday posts, we can register the best as a master and switch this slot to registered-master mode.",
-      "generation_prompt": "Instagram post, 1080x1350 (4:5 portrait). FULL-BLEED PHOTO covering the entire canvas — NO black borders, NO frames, NO shape masks, NO panels behind the photo. The photograph IS the design. Hero photo: post-class moments — students laughing, group around the mat, water bottles and gis, unposed warmth between training. NOT action shots, NOT technique. Text overlay BOTTOM-RIGHT: stacked uppercase white sans-serif (Helvetica or similar), 1-3 short lines max. Approved phrases: 'THE WORK / BETWEEN / THE HIGHLIGHTS', 'WE TRAIN HARD / WE ENJOY / THE PROCESS', 'FRIDAY / ON THE MATS', 'TIRED / SMILING / BACK TOMORROW'. NO graphic logo. NO gold elements. NO serif fonts. NO @handle in the design (the IG UI shows it). Editorial / documentary aesthetic — Magnum Photos, not athletic brand."
+      "mode": "registered-master",
+      "master_template": {
+        "design_id": "DAHJC_QKr0U",
+        "design_title": "For Clark V2",
+        "page_index": 5,
+        "purpose": "Friday Community cover/post — added 2026-05-08. Centered horizontal text overlay 'TRAIN • GROW • LAUGH' in dark sans-serif on light mat below the action photo. Editorial composition, full canvas photo with negative-space text band at the bottom.",
+        "default_overlay_text": "TRAIN • GROW • LAUGH",
+        "approved_alternative_overlays": [
+          "TRAIN • GROW • LAUGH",
+          "THE WORK BETWEEN THE HIGHLIGHTS",
+          "WE TRAIN HARD • WE ENJOY THE PROCESS",
+          "FRIDAY • ON THE MATS",
+          "TIRED • SMILING • BACK TOMORROW"
+        ]
+      },
+      "produce_post_steps": [
+        "Duplicate the master design DAHJC_QKr0U into a new working design.",
+        "Keep only page 5; remove pages 1-4 from the working copy.",
+        "Open editing transaction.",
+        "Replace the hero photo element on page 5 with the newest Community asset from Drive. Photo should be action / candid / community moment — rolling, laughing, post-class warmth.",
+        "Replace the text overlay (default: 'TRAIN • GROW • LAUGH'). Operator can override to one of the approved alternatives via brief.md if a different Friday tone fits the week.",
+        "Commit. Move to Alliance Clark folder. Report draft URL."
+      ],
+      "fallback_if_master_fails": "Fall back to fresh-generate with the prompt below; surface failure.",
+      "fresh_generate_fallback_prompt": "Instagram post, 1080x1350 (4:5 portrait). Full-canvas photo with action-or-community moment dominating the upper 70%. Below the action, a clean light-grey mat or neutral surface that holds a horizontal centered text band. Text overlay (centered, bottom-third): uppercase dark sans-serif (Helvetica or similar), single line, separated by bullet dots — e.g. 'TRAIN • GROW • LAUGH'. NO black frames. NO gold. NO serif fonts. NO graphic logo. Editorial / documentary aesthetic."
     },
     {
       "id": "06-sat-social-proof",

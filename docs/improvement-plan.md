@@ -458,7 +458,7 @@ Not new functionality — runtime plumbing that makes the existing features run 
 
 ### Tier 1 — High impact, low effort (build these first)
 
-1. **`[2h] [HIGH] Extend For Clark V2 to 7 pages.** Add Page 5 (FRI), Page 6 (SAT), Page 7 (SUN) masters to `For Clark V2`. Update `templates.json` to switch all 7 slots to `registered-master` mode. Result: zero-polish output for the entire week. Currently FRI/SAT/SUN are fresh-generate variability. **This is the single biggest win for visual consistency.**
+1. **`[~1h remaining] [HIGH] Extend For Clark V2 to 7 pages.** Status as of 2026-05-08: **Page 5 (FRI Community) added** — 'TRAIN • GROW • LAUGH' overlay, full-bleed action photo, registered-master mode locked in `templates.json` for slot `05-fri-community`. **Pages 6 (SAT Social Proof) and 7 (SUN Leader Voice) still pending.** Once those two land and templates.json is updated, all 7 slots are in registered-master mode → zero-polish output for the entire week. Single biggest remaining visual-consistency win.
 
 2. **`[1h] [HIGH] Member roster JSON (`members.json`).** Holds every Clark member's name, journey hook, photo refs, last-featured date. TUE Member Story slot picks via rotation, never repeats within 2 months. Eliminates "who do we feature this week" guessing. Foundation for Feature 2's concept-match selection.
 
