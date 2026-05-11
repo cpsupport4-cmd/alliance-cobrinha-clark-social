@@ -1,0 +1,4 @@
+drop_target_pht: 2026-05-08T19:00:00+08:00
+drop_window_passed: true
+late_by_hours: 15.3
+note: Friday 19:00 PHT slot has passed. Operator decision required — post immediately or roll to next week.

@@ -1,0 +1,29 @@
+{
+  "slot_id": "05-fri-community",
+  "iso_week": "2026-W19",
+  "generated_at_utc": "2026-05-08T03:16:01Z",
+  "approved_at_utc": "2026-05-09T02:19:30Z",
+  "approved_caption_path": "approved/post.md",
+  "regenerated_from_design_id": "DAHJCrektIs",
+  "regeneration_reason": "templates.json updated — new theme_signature locks editorial / documentary aesthetic; previous draft used outdated 'Train. Laugh. Grow.' headline now banned by what_to_avoid.",
+  "mode_attempted": "registered-master",
+  "mode_used": "fresh-generate",
+  "fallback_reason": "Available Canva MCP toolset has no design-duplicate path (import-design-from-url blocks canva.com URLs; no copy-design tool exposed). Fell back to fresh-generate per slot.fallback_if_master_fails. Surfacing so the master path can be implemented later.",
+  "canva_design_id": "DAHJEPYPm94",
+  "canva_edit_url": "https://www.canva.com/d/oLNS1x_DYoal97o",
+  "canva_view_url": "https://www.canva.com/d/jjKaTbnLNlgm-9_",
+  "canva_design_title": "Instagram Post - THE WORK BETWEEN THE HIGHLIGHTS captures our community's spirit and joy.",
+  "overlay_text_used": "THE WORK BETWEEN THE HIGHLIGHTS",
+  "source_asset": {
+    "drive_file_id": "1ozbI1A5HKXQFgSM0R1JHFToHv7ziERHt",
+    "drive_file_name": "photo_2026-05-08_10-09-58.jpg",
+    "drive_view_url": "https://drive.google.com/file/d/1ozbI1A5HKXQFgSM0R1JHFToHv7ziERHt/view?usp=drivesdk",
+    "canva_asset_id": "MAHJCqid-50"
+  },
+  "brand_kit_id_used": "kAGdeHDeWjQ",
+  "brief_override_used": null,
+  "drop_target_pht": "2026-05-08T19:00:00+08:00",
+  "drop_window_passed_at_approval": true,
+  "drop_window_late_by_hours": 15.3,
+  "status": "approved"
+}
