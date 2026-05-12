@@ -2,6 +2,18 @@
 content/**/raw/*
 !content/**/raw/.gitkeep
 
+# Drafts — transient outputs of produce-post, regenerable. Not tracked.
+# Only approved/ artifacts get committed (the audit trail of published posts).
+content/[0-9]*/[0-9]*/drafts/*
+!content/[0-9]*/[0-9]*/drafts/.gitkeep
+!content/_template/**/drafts/.gitkeep
+
+# Stories packs — transient daily output. Not tracked.
+content/[0-9]*/stories/
+
+# Status cache — local-only state, not version controlled
+content/_status_cache.json
+
 # Canva exports — ephemeral
 content/**/exports/
 content/**/*.mp4

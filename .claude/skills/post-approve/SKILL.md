@@ -1,21 +1,35 @@
 ---
 name: post-approve
-description: Move a slot's draft into approved state, render the final paste-ready post text, and surface a drop-time reminder. Run when user says "approve <slot-id>" after Jeff/Adrian/Ram have signed off on the Canva draft.
+description: Move a slot's draft into approved state, render the final paste-ready post text, surface a drop-time reminder, AND commit + push the approved files to GitHub. This is the SINGLE commit-and-push point in the system. Run when user says "approve <slot-id>" after Jeff/Adrian/Ram have signed off on the Canva draft.
 ---
 
 # post-approve
 
-The handoff between draft and live. Doesn't post to Instagram (no IG MCP yet) — it preps everything so Vhinz can post by hand at the right time.
+The handoff between draft and live. Doesn't post to Instagram (no IG MCP yet) — it preps everything so Vhinz can post by hand at the right time. **This skill is the SINGLE place in the system that touches git** (locked 2026-05-12).
+
+## Repo policy: SINGLE commit-and-push point
+
+Per the system's repo hygiene rules:
+
+- **`produce-post` writes drafts locally; never commits.**
+- **`weekly-status` reads locally; never commits.**
+- **`stories-pack` writes locally; never commits.**
+- **THIS skill (`post-approve`) is the only one that commits + pushes**, and only commits the slot's `approved/*` files (plus any associated config changes the operator explicitly opted into).
+
+This means git history is clean — one commit per published post — instead of churning with every produce-post run.
+
+If the operator wants to commit something other than an approved post (e.g. a config change to `templates.json`), they run git themselves.
 
 ## Inputs
 
 - `slot_id` (required) — e.g. `04-thu-kids-family`
 - `iso_week` (optional, defaults to current ISO week in PHT)
 - `caption_edits` (optional) — if provided, overrides the existing caption.md before approval (lets you tweak copy without re-running caption-library)
+- `skip_push` (optional, default false) — if true, commit locally but don't push to origin. Useful when offline or when batching approvals.
 
 ## Required tools
 
-- `Read`, `Write`, `Edit`, `Bash`. No MCPs needed.
+- `Read`, `Write`, `Edit`, `Bash`. No MCPs needed. `Bash` is required for `git add`, `git commit`, `git push`.
 
 ## Steps
 
@@ -72,7 +86,29 @@ The three `.` lines on their own create the IG-style "scroll past" gap before ha
 
 Don't write `.posted` yet. That marker is created when the post goes live. For now, write `approved/.pending` containing the planned drop time — `weekly-status` reads this for the dashboard.
 
-### 8. Report to user
+### 8. Commit and push the approved files (SINGLE commit-and-push point)
+
+This is the ONLY skill in the system that does this. Scope: only the `approved/*` files for this slot, no others.
+
+1. `git add content/<iso_week>/<slot_id>/approved/`
+2. Confirm with `git status` that NOTHING outside `approved/` is staged. If anything else is staged (e.g. `templates.json` edits, `caption-pool.json` updates), STOP and surface to the operator — those shouldn't ride along on an approval commit.
+3. Commit with a message of the form:
+   ```
+   Approve <slot.day> <slot.name> — <iso_week>
+
+   Slot:           <slot_id>
+   Drop:           <slot.day> <drop_time_pht> PHT
+   Canva draft:    <canva_edit_url>
+   Source asset:   <drive_file_name>
+   Caption (line 1): "<first line of caption>"
+   Approved at:    <approved_at_utc>
+   ```
+4. If `skip_push` is false (default): `git push origin main`.
+5. Report the commit SHA and push result.
+
+If `git push` fails (network, auth, conflict): commit stays local. Surface the error verbatim. Operator runs `git push origin main` themselves later.
+
+### 9. Report to user
 
 ```
 Approved — <slot.day> <slot.name> (<slot_id>, week <iso_week>)

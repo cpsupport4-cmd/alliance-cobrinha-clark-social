@@ -63,3 +63,44 @@ Strategy lives in [CLAUDE.md](CLAUDE.md). Anything Claude needs to do its job, t
 - Inside each week, the 7 day slots from `_template/` are copied in
 - Raw assets in `raw/`, finished drafts in `drafts/`, approved posts in `approved/`
 - Raw videos and exports are gitignored — they live in Drive
+
+---
+
+## What gets tracked in git
+
+The repo is the **system** + the **audit trail of published posts**. Not drafts, not stories, not raw media. Locked 2026-05-12.
+
+### ✅ Tracked (committed)
+
+| Path | Why |
+|------|-----|
+| `CLAUDE.md` | Strategy + voice + workflow spec |
+| `README.md` | Team-facing quick start (this file) |
+| `.gitignore` | Ignore rules |
+| `templates.json` | Per-slot config — Drive folder, master template, drop time, prompts |
+| `brand/README.md` | Brand reference (colors, fonts, theme signature) |
+| `brand/caption-pool.json` | Pillar tones, banned phrases, hashtag pools |
+| `.claude/skills/*/SKILL.md` | The 6 skills that run the system |
+| `docs/strategy.md` | Full PPTX strategy as structured markdown |
+| `docs/improvement-plan.md` | V2 roadmap |
+| `content/_template/*` | Per-day brief templates |
+| `content/<week>/<slot>/approved/*` | **Audit trail of published posts** |
+| `scripts/*` | Helper tooling (e.g. `weekly-status.sh`) |
+
+### ❌ Not tracked (local-only, gitignored)
+
+| Path | Why |
+|------|-----|
+| `content/<week>/<slot>/drafts/*` | Transient — regenerable via `produce-post` |
+| `content/<week>/stories/*` | Daily story packs — transient |
+| `content/<week>/<slot>/raw/*` | Raw media lives in Drive, not git |
+| `content/_status_cache.json` | Local-only state |
+| Canva exports (`.mp4`, `.mov`, etc.) | Ephemeral |
+
+### Commit-and-push policy
+
+**Only one skill in the system touches git: `post-approve`.** When a draft is approved, that skill commits the `approved/*` files for that one slot and pushes. Every other skill writes locally and stops — no auto-commit, no auto-push.
+
+This keeps git history clean: one commit per published post, instead of churning with every produce-post run.
+
+If the operator wants to commit something else (config changes, README edits, etc.), they run git themselves.

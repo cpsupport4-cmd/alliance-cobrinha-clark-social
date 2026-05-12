@@ -1,83 +1,65 @@
 ---
 name: weekly-status
-description: Read-only dashboard of the current week. Lists each of the 7 slots with draft / approved / posted state. Run when user says "weekly status" or "what's the state of this week".
+description: Read-only dashboard of the current week. Runs scripts/weekly-status.sh which does the file-tree walk in pure bash for token efficiency. Lists each of the 7 slots with draft / approved / posted state plus a today's-nudge. Run when user says "weekly status" or "what's the state of this week".
 ---
 
 # weekly-status
 
-Read-only. No external calls. Safe first thing to run when verifying the system is alive.
+Pure local read-only dashboard. **Delegates to `scripts/weekly-status.sh`** for token efficiency — that script does the file-tree walk in bash in one invocation instead of Claude orchestrating multiple Read calls. Saves ~80-90% of the tokens this skill used to cost.
+
+## Repo policy
+
+This skill does NOT touch git. It only reads.
 
 ## Inputs
 
-- **Week** (optional, defaults to current ISO week): e.g. `2026-W19`
+- **Week** (optional, defaults to current ISO week in Manila): e.g. `2026-W19`
+- **`--quiet`** flag (optional): just the status table, no today's-nudge / stories-nudge
 
-## Required tools (run-time)
+## Required tools
 
-- `Read`, `Glob`, `Bash` only. No MCPs needed — this is fully local.
+- `Bash` only. No `Read`, no MCPs, no `Glob`, no walking-the-tree-manually. The script does everything.
 
 ## Steps
 
-### 1. Resolve week
+1. Run the script:
+   ```bash
+   bash scripts/weekly-status.sh [<iso_week>] [--quiet]
+   ```
+2. Print the output verbatim to the user. **Do not summarize, paraphrase, or "improve."** The script's output is the canonical format.
+3. If the user asked about a state element not surfaced by the script (e.g. "what's in the W19 SAT draft specifically?"), THEN do a targeted `Read` on that one file. Don't pre-fetch.
 
-- Default to current ISO week in Manila: `TZ='Asia/Manila' date +%G-W%V`.
-- If `content/<year>-W<week>/` doesn't exist, REPORT: "No content folder for <iso_week> yet. Run `daily-check` to create it."
-- Stop if missing.
-
-### 2. Walk the 7 slots
-
-For each slot in `templates.json`, check the matching folder under `content/<iso_week>/<slot.id>/`:
-
-- `drafts/draft.json` → state has reached "draft"
-- `approved/draft.json` (or any file in approved/) → state has reached "approved"
-- Cross-reference with a `.posted` marker file or absence thereof — leave as `?` if not tracked yet
-
-### 3. Build status table
-
-| Slot | Day | Pillar | State | Drop time |
-|------|-----|--------|-------|-----------|
-| 01-mon-set-the-tone | MON | Community | `draft` / `approved` / `posted` / `missing` | 19:00 PHT |
-| 02-tue-member-story | TUE | Spotlight | … | 19:00 PHT |
-| ... | ... | ... | ... | ... |
-
-State values:
-- `missing` — `slot_dir` doesn't exist or `drafts/` is empty
-- `draft` — has `drafts/draft.json`
-- `approved` — has anything in `approved/`
-- `posted` — has `.posted` marker file (created by post-approve when scheduling complete)
-
-### 4. Summary line
-
-Compute:
-- `<approved_count> / 7 approved`
-- `<posted_count> / 7 posted`
-- `<days_remaining_in_week>`
-
-### 5. Stories rollup (optional)
-
-If `content/<iso_week>/stories/` exists, list each daily file: `<date>.json — <count> stories`. If a recent date has none, flag it.
-
-## Output
+## Output (verbatim from the script)
 
 ```
 Weekly status — <iso_week>
+Today: <day> <date> PHT (day N of 7)
 
-| Slot                      | Day | State    | Drop time |
-|---------------------------|-----|----------|-----------|
-| 01-mon-set-the-tone       | MON | approved | 19:00 PHT |
-| 02-tue-member-story       | TUE | draft    | 19:00 PHT |
-| 03-wed-value-trust        | WED | missing  | 19:00 PHT |
-| ...                       | ... | ...      | ...       |
+| Slot                      | Day | State    | Drop (PHT) |
+|---------------------------|-----|----------|------------|
+| 01-mon-set-the-tone       | MON | draft    | 19:00      |
+| 02-tue-member-story       | TUE | missing  | 19:00      | *TODAY*
+| ...
 
-Approved: 1/7 · Posted: 0/7 · Days remaining: 5
+Drafted: X/7 · Approved: X/7 · Posted: X/7 · Missing: X/7
+Stories packs this week: N days covered (target: 7)
 
-STORIES THIS WEEK:
-  2026-05-04 — 7 stories ✓
-  2026-05-05 — 0 stories ✗ (today, run stories-pack)
+TODAY'S NUDGE: <slot> has no draft. Drop is at 19:00 PHT. Run 'produce-post <slot>'.
+STORIES NUDGE: Stories pack for today not yet generated. Run 'stories-pack'.
 ```
 
 ## Failure modes
 
 | Failure | Surface to user |
 |---------|-----------------|
-| Week folder missing | "No content folder for <iso_week> — run daily-check to create it." |
-| `templates.json` malformed | Show the parse error; halt. |
+| Script not found | "scripts/weekly-status.sh not found. Has the repo been cloned with all files? Re-run `git pull origin main`." |
+| Week folder missing | The script already handles this: outputs "No content folder for `<week>` yet." Skill just prints it. |
+| Script returns non-zero | Print the error verbatim; the script's `set -e` strategy is conservative, so non-zero is meaningful. |
+
+## Why this design
+
+`weekly-status` used to walk the content tree via individual Read/Bash tool calls + reasoning. That cost ~5-10k tokens per check, mostly burned on Claude orchestrating the walk. For a skill that the operator runs multiple times a day, that's expensive over a week.
+
+The script does the same work in pure bash in ~50ms and ~30 lines of output. The skill becomes "invoke the script and print its output" — ~500 tokens total instead of ~10,000.
+
+If you need to add new state checks later (e.g. tracking video vs image format, capturing approval timestamps), modify `scripts/weekly-status.sh` directly. The SKILL.md doesn't need updating; it just delegates.

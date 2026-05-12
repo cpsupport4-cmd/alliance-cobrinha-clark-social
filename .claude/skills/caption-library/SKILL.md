@@ -1,18 +1,30 @@
 ---
 name: caption-library
-description: Generate one on-brand caption + ~15 hashtags for a given slot and pillar. Reads brand/caption-pool.json. Enforces banned-word filter. Returns text. Invoked by produce-post; can also be called directly to refresh just the copy on an existing draft.
+description: Generate text in one of two modes — (1) "caption" mode produces an Instagram post caption + ~15 hashtags; (2) "overlay" mode produces shape-constrained text for replacing a master template's overlay during produce-post. Both modes share pillar tones, banned-phrase filter, and the same caption-pool.json config.
 ---
 
 # caption-library
 
-Pure copywriting. No MCPs. Reads config, writes text.
+Pure copywriting. No MCPs. Reads config, writes text. Two modes.
 
 ## Inputs
 
 - `slot_id` (required) — e.g. `04-thu-kids-family`
 - `pillar` (required) — one of `community_daily`, `member_spotlight`, `value_trust`, `kids_family`, `social_proof`, `leader_voice`
 - `iso_week_number` (required) — integer 1–53, used for hashtag rotation
+- `mode` (optional, defaults to `"caption"`) — `"caption"` for IG post caption + hashtags; `"overlay"` for on-design text replacement
 - `brief_override` (optional) — override text from the slot's `brief.md`
+- `concept` (optional) — short description of the day's concept ("Santi's stripe ceremony", "Monday after long weekend", "kids learning closed guard") — drives both modes
+- `master_text_shape` (required when `mode == "overlay"`) — describes the shape of the master's existing text so the replacement fits:
+  ```json
+  {
+    "lines": 3,
+    "max_chars_per_line": 28,
+    "current_text": "Confidence\nListening\nSAFE PLACE TO LEARN",
+    "current_style_notes": "Title-case first two lines, all-caps third line; serif"
+  }
+  ```
+  This comes from `produce-post`'s `start-editing-transaction` response (read element's current text + dimensions).
 
 ## Required tools
 
@@ -26,7 +38,14 @@ Pure copywriting. No MCPs. Reads config, writes text.
 - Read `brand/caption-pool.json` (the editable config).
 - Read the slot's row in `templates.json` (for `goal` field, useful as anchor).
 
-### 2. Generate caption
+### 2. Branch on mode
+
+Read `mode` input. Default is `"caption"`.
+
+- **`mode: "caption"`** → continue to Step 2A (Instagram post caption generation)
+- **`mode: "overlay"`** → jump to Step 2B (master-overlay text generation)
+
+### 2A. Generate IG post caption (mode: caption)
 
 Compose 1–2 lines that:
 
@@ -37,6 +56,40 @@ Compose 1–2 lines that:
 5. **Do NOT include hashtags** (those are separate)
 6. **Do NOT include emojis** unless the brief explicitly asks for them
 7. If `brief_override` is supplied, lean into it heavily — that's the user telling you what *this specific* post is about. Otherwise, draw inspiration from the pillar's `examples` (don't copy verbatim).
+8. If `concept` is supplied, the caption should reference or extend the concept without literally repeating it. The IG caption complements the overlay; they shouldn't say the same thing.
+
+### 2B. Generate master-overlay text (mode: overlay)
+
+The output of this mode REPLACES the master template's existing overlay text in `produce-post`. Goal: same layout, same typography zone, **new text aligned with the day's concept**.
+
+Compose new overlay text that:
+
+1. **Matches the master's shape** as defined in `master_text_shape`:
+   - Same number of lines (don't add or drop a line — the master's typography is calibrated for that count)
+   - Each line at most `max_chars_per_line` characters (including spaces) — measure carefully; longer lines will wrap or overflow the typography zone
+   - Preserve the case pattern from `current_style_notes` (if master is mixed case, output mixed case; if master is all-caps, output all-caps)
+2. **Matches `pillar.tone_notes`** — same voice rules as caption mode
+3. **Is concept-driven, not template-recycled.** If `concept` or `brief_override` is provided, the overlay must reference it. If neither is provided, generate from the pillar tone + slot goal — but never just reuse the master's `current_text` verbatim. The master's text is a SHAPE reference, not a content default.
+4. **Passes banned-phrase filter** — same hard check as Step 3
+5. **No emojis, no hashtags, no @handles** in overlay text. The design carries the brand presence; overlay text is content.
+6. **No URLs, no calls-to-action like "click", "DM us", "book"** — banned for overlays specifically (a stricter superset of the global banned list). Overlay text should never sound like an ad.
+
+If the master text is part of the brand's canonical signature (e.g. FRI's "TRAIN • GROW • LAUGH" or a tagline the team uses every week) AND the operator wants to preserve it, they opt in via `brief.md` `keep_master_overlay: true`. In that case, this mode SHOULD NOT run — `produce-post` skips the overlay generation step entirely. Default behavior is: regenerate.
+
+After generation, return as structured data:
+
+```json
+{
+  "mode": "overlay",
+  "overlay_text": "<new text with line breaks>",
+  "overlay_lines": ["line1", "line2", "line3"],
+  "concept_referenced": "<what the operator gave or what the skill inferred>",
+  "kept_master": false,
+  "alternatives": ["<2-3 alternative phrasings the operator can swap in via brief.md>"]
+}
+```
+
+The `alternatives` field gives Vinz options to A/B test in Canva without re-running the skill.
 
 ### 3. Banned-word filter (HARD)
 

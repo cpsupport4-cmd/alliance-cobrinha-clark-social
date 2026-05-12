@@ -1,11 +1,19 @@
 ---
 name: produce-post
-description: Produce 4 Canva draft variants + caption + hashtags for a single slot in the current week. Pulls newest matching asset from Drive, generates 4 Canva designs with brand kit, saves draft URLs and copy to repo. Run when user says "produce <slot-id> [for this week]" or as part of daily-check.
+description: Produce 4 Canva draft variants + caption + hashtags for a single slot in the current week. Pulls newest matching asset from Drive, generates 4 Canva designs with brand kit. Writes outputs LOCALLY to content/<week>/<slot>/drafts/ — NEVER commits or pushes. Run when user says "produce <slot-id> [for this week]" or as part of daily-check.
 ---
 
 # produce-post
 
 The workhorse skill. Takes one slot ID, produces one complete review-ready package with **4 design variants** so Vinz can pick the strongest layout.
+
+## Repo policy: LOCAL WRITES ONLY (locked 2026-05-12)
+
+This skill writes `draft.json`, `caption.md`, `hashtags.md` to `content/<week>/<slot>/drafts/` on disk. **It does NOT run `git add`, `git commit`, or `git push`.** Drafts are transient — they're regenerable, often regenerated, and shouldn't pollute git history. The `.gitignore` excludes `content/<week>/<slot>/drafts/*` so accidental `git add -A` won't catch them either.
+
+The commit-and-push moment for any slot happens in `post-approve` and ONLY for the approved/* files. That's the single audit-trail entry per published post.
+
+If the operator says "push the drafts" explicitly, the operator runs git themselves. The skill never assumes intent to publish.
 
 ## Output policy: 4 designs per slot (locked 2026-05-09)
 
@@ -112,12 +120,35 @@ This slot has a master template page in `slot.master_template`. **Path validated
    - **Photo element** — typically the only image fill: `fills[0]` where `type === "image"`. Capture `fills[0].element_id`.
    - **Main overlay text** — the WIDEST text element in `richtexts[]` (decorative bullet separators like `·` show up as narrow text elements; ignore them). Heuristic: pick the `richtexts[i]` whose `containerElement.dimension.width` is largest. Capture its `element_id`.
 
-5. **Determine the new overlay text:**
-   - If `slot.brief.md` contains a `force_overlay:` or operator-specified phrase from `slot.master_template.approved_alternative_overlays`, use it.
-   - Else use `slot.master_template.default_overlay_text` (e.g. `TRAIN • GROW • LAUGH` for FRI). Keeping the default is the consistent-week-over-week behavior; that's the point of registered-master mode.
-   - If the new text equals the current text, skip the text replacement operation entirely (saves a write).
+5. **Determine the new overlay text** — REGENERATE BY DEFAULT (locked 2026-05-12):
 
-6. **Apply the swaps** in a single `perform-editing-operations` call:
+   The master provides the **layout + composition + typography style + text-zone shape**. The overlay TEXT itself is fresh each run, aligned with the day's concept. Reusing the master's text verbatim would make every Monday post say the same thing forever — not what the team wants.
+
+   - **First check `slot/brief.md` for explicit operator intent:**
+     - If `brief.md` contains `force_overlay: <exact text>`, use that exact text (operator's hard override). Skip generation.
+     - If `brief.md` contains `keep_master_overlay: true`, keep the master's current text unchanged. Skip the `replace_text` operation. (Used when the master's text IS a brand signature like FRI's "TRAIN • GROW • LAUGH" and the team wants weekly consistency for that specific slot.)
+     - If `brief.md` contains `concept: <short description>`, capture as `concept` input to caption-library.
+   - **Otherwise — invoke caption-library in overlay mode** to generate fresh text:
+     ```
+     caption-library(
+       slot_id: <slot.id>,
+       pillar: <slot.pillar>,
+       iso_week_number: <current ISO week as int>,
+       mode: "overlay",
+       concept: <brief.md concept if any, else null>,
+       master_text_shape: {
+         lines: <count newlines in the master's current text + 1>,
+         max_chars_per_line: <longest line length in the master's current text + 4 for buffer>,
+         current_text: <the master's existing text from richtexts[i].regions>,
+         current_style_notes: <inferred from the text — all-caps vs title-case, presence of decorative dots, etc.>
+       }
+     )
+     ```
+   - Caption-library returns the new `overlay_text` (banned-phrase clean, shape-compliant, concept-aligned) plus 2-3 `alternatives`.
+   - The new `overlay_text` is what `perform-editing-operations` uses in the `replace_text` operation.
+   - Save the `alternatives` into `draft.json → overlay_alternatives` so Vinz can A/B test in Canva.
+
+6. **Apply the swaps** in a single `perform-editing-operations` call. Both photo AND text swap, unless `keep_master_overlay: true` was set in `brief.md` (in which case text op is omitted):
    ```
    perform-editing-operations(
      transaction_id: <transaction_id>,
@@ -130,10 +161,11 @@ This slot has a master template page in `slot.master_template`. **Path validated
          asset_id: <newly_uploaded_canva_asset_id from Step 6>,
          alt_text: "<descriptive alt text for the new photo>"
        },
-       // Only include this if text needs to change (see Step 5):
+       // Included by default (regenerated text per Step 5).
+       // OMITTED only when brief.md sets keep_master_overlay: true.
        { type: "replace_text",
          element_id: <text_element_id>,
-         text: "<new_overlay_text>"
+         text: "<new_overlay_text from caption-library>"
        }
      ]
    )
